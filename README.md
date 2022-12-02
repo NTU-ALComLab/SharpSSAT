@@ -33,6 +33,6 @@ SharpSSAT -s -k [SDIMACS_File]`
 then the witness(Skolem functions), written in a BLIF file, will be generated in the same directory as the SDIMACS_File.
 
 ## Contact
-f you encouter any problems or have suggestions, feel free to create an issue or contact us through r11943096@ntu.edu.tw.
+If you encouter any problems or have suggestions, feel free to create an issue or contact us through r11943096@ntu.edu.tw.
 
 

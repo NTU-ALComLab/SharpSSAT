@@ -34,8 +34,6 @@ then the witness (Skolem functions), written in a BLIF file, will be generated i
 ## Reference
 * [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):
   ```
-
-
   @inproceedings{Fan_Jiang_2023,
       author     = {Fan, Yu-Wei and Jiang, Jie-Hong R.},
       title      = {SharpSSAT: A Witness-Generating Stochastic Boolean Satisfiability Solver},

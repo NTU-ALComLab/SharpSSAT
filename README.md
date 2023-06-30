@@ -32,14 +32,17 @@ $ SharpSSAT -s -k [SDIMACS_File]`
 then the witness (Skolem functions), written in a BLIF file, will be generated in the same directory as the SDIMACS_File.
 
 ## Reference
-* AAAI 2023:
+* [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):
   ```
-  @inproceedings{Fan:AAAI23,
-      author      = {Yu-Wei Fan and Jie-Hong Roland Jiang},
-      title       = {SharpSSAT: A Witness-Generating Stochastic Boolean Satisfiability Solver},
-      booktitle   = {In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI)},
-      year        = {2023}
-  }
+
+
+  @inproceedings{Fan_Jiang_2023,
+      author     = {Fan, Yu-Wei and Jiang, Jie-Hong R.},
+      title      = {SharpSSAT: A Witness-Generating Stochastic Boolean Satisfiability Solver},
+      booktitle  = {Proceedings of the AAAI Conference on Artificial Intelligence},
+      DOI        = {10.1609/aaai.v37i4.25509},
+      year       = {2023}
+   }
   ```
 
 ## Contact

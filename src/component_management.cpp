@@ -426,7 +426,7 @@ bool ComponentAnalyzer::recordRemainingCompsFor(StackLevel &top) {
 								tmp_sat_prob, node)) {
 								
 								top.includeSatProb(tmp_sat_prob);
-								if(config_.strategy_generation){
+								if(config_.strategy_generation || config_.compile_DNNF){
 									assert(node);
 									assert(top.getNode()!=node);
 									top.getNode()->addDescendant(node);

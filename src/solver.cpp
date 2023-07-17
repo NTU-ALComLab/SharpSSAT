@@ -33,6 +33,11 @@ bool Solver::simplePreProcess() {
     stack_.top().includePathProb( prob(lit) );
     if(qType(lit)==EXISTENTIAL)
       exist_imp_.push_back(lit.toInt());
+    else{
+        assert(qType(lit) == RANDOM);
+        cout <<"Recorded random implication "<< lit.toInt()<<endl;
+        random_imp_.push_back(lit.toInt());
+    }
   }
 //END process unit clauses
   bool succeeded = BCP(start_ofs);
@@ -46,12 +51,14 @@ bool Solver::simplePreProcess() {
       double assert_prob_ = stack_.top().getCurPathProb();
       LiteralIndexedVector<TriValue> lv = LiteralIndexedVector<TriValue>(literal_values_);
       HardWireAndCompact();
-      if(config_.strategy_generation)
+      if(config_.strategy_generation || config_.compile_DNNF)
         initTrace();
       literal_values_ = lv;
       stack_.top().includePathProb(assert_prob_);
-      if(config_.strategy_generation)
+      if(config_.strategy_generation || config_.compile_DNNF){
         stack_.top().getNode()->recordExistImplications(exist_imp_);
+        stack_.top().getNode()->recordRandomImplications(random_imp_);
+      }
     }
     else
       HardWireAndCompact();
@@ -183,6 +190,14 @@ void Solver::solve(const string &file_name) {
     Node::resetGlobalVisited();
     statistics_.set_num_nodes(trace_->numNodes());
     statistics_.set_num_edges(trace_->numEdges());
+  }
+  else if(config_.compile_DNNF){
+    cout << "Start Generating DNNF..." << endl;
+    Node::resetGlobalVisited();
+    statistics_.set_num_nodes(trace_->numNodes());
+    statistics_.set_num_edges(trace_->numEdges());
+    // TODO: change DNNF name
+    generateDNNF("./test.nnf");
   }
   stopwatch_.stop();
   statistics_.time_elapsed_ = stopwatch_.getElapsedSeconds();
@@ -366,7 +381,7 @@ retStateT Solver::backtrack() {
   do {
     if (stack_.top().branch_found_unsat()){
       component_analyzer_.removeAllCachePollutionsOf(stack_.top());
-      if(config_.strategy_generation){
+      if(config_.strategy_generation || config_.compile_DNNF){
         Node* n = stack_.top().getNode();
         assert(n);
         n->removeAllDescendants(n->getCurrentBranch());
@@ -379,7 +394,7 @@ retStateT Solver::backtrack() {
       LiteralID aLit = TOS_decLit();
       assert(stack_.get_decision_level() > 0);
       stack_.top().changeBranch();
-      if(config_.strategy_generation){
+      if(config_.strategy_generation || config_.compile_DNNF){
         assert(stack_.top().getNode());
         stack_.top().getNode()->changeBranch();
       }
@@ -392,7 +407,7 @@ retStateT Solver::backtrack() {
     // NOTE for ssat
     if(config_.ssat_solving){
       double p = stack_.top().getTotalSatProb();
-      if(config_.strategy_generation){
+      if(config_.strategy_generation || config_.compile_DNNF){
         Node* n = stack_.top().getNode();
         assert(n);
         if(n->isExist()) {
@@ -416,7 +431,7 @@ retStateT Solver::backtrack() {
     // NOTE for ssat
     if(config_.ssat_solving){
       (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());
-      if(config_.strategy_generation){
+      if(config_.strategy_generation || config_.compile_DNNF){
         assert((stack_.end()-2)->getNode());
         assert(stack_.top().getNode());
         ((stack_.end()-2)->getNode())->addDescendant(stack_.top().getNode());
@@ -493,8 +508,10 @@ bool Solver::bcp() {
 // bcp on that literal
   unsigned start_ofs = literal_stack_.size() - 1;
 
-  if(config_.strategy_generation) 
+  if(config_.strategy_generation || config_.compile_DNNF){
     exist_imp_.clear();
+    random_imp_.clear();
+  }
 
 //BEGIN process unit clauses
   for (auto lit : unit_clauses_){
@@ -503,9 +520,14 @@ bool Solver::bcp() {
     if(setLiteralIfFree(lit)){
       //cout << "assign unit clause" << endl;
       stack_.top().includePathProb( prob(lit) );
-      if(config_.strategy_generation){
+      if(config_.strategy_generation || config_.compile_DNNF){
         if(qType(lit)==EXISTENTIAL)
           exist_imp_.push_back(lit.toInt());
+        else{
+            assert(qType(lit) == RANDOM);
+            cout <<"Recorded random implication "<< lit.toInt()<<endl;
+            random_imp_.push_back(lit.toInt());
+        }
       }
     }
     else{
@@ -540,10 +562,11 @@ bool Solver::bcp() {
     }
   }
 
-  if(config_.strategy_generation){
+  if(config_.strategy_generation || config_.compile_DNNF){
     if(bSucceeded){
       Node* n = stack_.top().getNode();
       n->recordExistImplications(exist_imp_);
+      n->recordRandomImplications(random_imp_);
     }
   }
 
@@ -563,9 +586,14 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
       }
       if(setLiteralIfFree(*bt, Antecedent(unLit))){
         stack_.top().includePathProb( prob(*bt) );
-        if(config_.strategy_generation){
+        if(config_.strategy_generation || config_.compile_DNNF){
           if(qType(*bt)==EXISTENTIAL){
             exist_imp_.push_back( (*bt).toInt() );
+          }
+          else{
+            assert(qType(*bt) == RANDOM);
+            cout <<"Recorded random implication "<< (*bt).toInt()<<endl;
+            random_imp_.push_back( (*bt).toInt() );
           }
         };
       }
@@ -595,9 +623,14 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         // for p_otherLit remain poss: Active or Resolved
         if (setLiteralIfFree(*p_otherLit, Antecedent(*itcl))) { // implication
           stack_.top().includePathProb( prob(*p_otherLit) );
-          if(config_.strategy_generation){
+          if(config_.strategy_generation || config_.compile_DNNF){
             if(qType(*p_otherLit)==EXISTENTIAL){
               exist_imp_.push_back( (*p_otherLit).toInt() );
+            }
+            else{
+                assert(qType(*p_otherLit) == RANDOM);
+                cout <<"Recorded random implication "<< (*p_otherLit).toInt()<<endl;
+                random_imp_.push_back( (*p_otherLit).toInt() );
             }
           }
           if (isLitA)
@@ -983,5 +1016,13 @@ void Solver::generateStrategy(const string& output_file){
   initializeBLIF(out);
   trace_->writeStrategyToFile(out);
   finalizeBLIF(out);
+  out.close();
+}
+
+void Solver::generateDNNF(const string& output_file){
+  // 1. initialize blif file
+  trace_->initExistPinID(num_variables());
+  ofstream out(output_file);
+  trace_->writeDNNF(out);
   out.close();
 }

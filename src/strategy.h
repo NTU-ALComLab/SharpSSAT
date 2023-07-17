@@ -5,6 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 // the trace of SSAT solving is represented as a DAG
@@ -77,9 +78,19 @@ public:
         existImp_[curBranch_].push_back(imp);
     }
 
+    void recordRandomImplications(vector<int>& imp){
+        randomImp_[curBranch_] = imp;
+    }
+
+    void addRandomImplication(int imp){
+        randomImp_[curBranch_].push_back(imp);
+    }
+
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
     friend Trace;
+    int             DNNFId = -1;    // DNNF node id
+
 private: 
     void increaseRefCnt(){ ++refCnt_; }
     void decreaseRefCnt(){ assert(refCnt_!=0); --refCnt_; }
@@ -90,8 +101,8 @@ private:
     unsigned        decVar_;        // decision variable
     bool            b_;             // maximum probability branch,
     bool            curBranch_; 
-    //TODO also store existential implications here
     vector<int>     existImp_[2];   // existential implications 
+    vector<int>     randomImp_[2];  // random implications 
 
 
     // debug data member;
@@ -141,11 +152,18 @@ public:
     void initExistPinID(size_t nVars){ existID.resize(nVars+1, 0); }
 
     void writeStrategyToFile(ofstream&);
+    void writeDNNF(ofstream&);
+    void writeDNNFRecur(Node*);
+    
 
 private:
     Node*           source_;
     vector<size_t>  existID;
     size_t          intermediateID;
+    stringstream    ss;
+    unsigned        nNode_ = 0;
+    unsigned        nEdge_ = 0;
+    vector<int>     lit2NodeId_;
 
     void    updateExist(size_t ev, size_t w, ofstream& out);
     void    updateIntermediate(size_t wire, vector<size_t>& par_wire, ofstream& out);

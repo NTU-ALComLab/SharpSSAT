@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -p     \t turn on pure literal detection" << endl;
     cout << "\t -c     \t turn on pure component detection" << endl;
     cout << "\t -k     \t turn on strategy generation"  << endl;
+    cout << "\t -d     \t turn on d-DNNF writing"  << endl;
     cout << "\t" << endl;
 
     return -1;
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
 //      theSolver.config().perform_non_chron_back_track = false;
     if ( strcmp(argv[i], "-k")==0 )
       theSolver.config().strategy_generation = true;
+    if ( strcmp(argv[i], "-d")==0 )
+      theSolver.config().compile_DNNF = true;
     if ( strcmp(argv[i], "-c")==0 )
       theSolver.config().perform_pure_component = true;
     if ( strcmp(argv[i], "-p")==0 )

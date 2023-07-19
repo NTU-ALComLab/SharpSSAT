@@ -214,9 +214,11 @@ private:
   // will be called only after preprocessing
   void initTrace(){
     Node* n = new Node(DUMMY);
+    Node* zero = new Node(DUMMY);
+    Node* one = new Node(DUMMY);
     stack_.back().setNode(n);
     n->changeBranch();
-    trace_ = new Trace(n); // n is the single source
+    trace_ = new Trace(n, zero, one); // n is the single source
   }
 
   const LiteralID &TOS_decLit() {

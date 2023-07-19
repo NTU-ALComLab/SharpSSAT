@@ -123,14 +123,19 @@ private:
 // the trace is a DAG of single source
 class Trace{
 public:
-    Trace(Node* s): source_(s), intermediateID(0){};
+    Trace(Node* s, Node* zero, Node* one): source_(s),constants_{zero,one}{};
 
     Trace(): source_(NULL) {};
 
     ~Trace(){
         if(source_){
             source_->removeAllDescendants(1);
-            delete source_;
+        }
+        if(constants_[0]){
+            delete constants_[0];
+        }
+        if(constants_[1]){
+            delete constants_[1];
         }
     };
 
@@ -154,12 +159,13 @@ public:
     void writeStrategyToFile(ofstream&);
     void writeDNNF(ofstream&);
     void writeDNNFRecur(Node*);
-    
+    Node* getConstant(bool phase){ return constants_[phase]; }
 
 private:
     Node*           source_;
+    Node*           constants_[2];
     vector<size_t>  existID;
-    size_t          intermediateID;
+    size_t          intermediateID = 0;
     stringstream    ss;
     unsigned        nNode_ = 0;
     unsigned        nEdge_ = 0;

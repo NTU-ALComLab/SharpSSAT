@@ -35,7 +35,6 @@ bool Solver::simplePreProcess() {
       exist_imp_.push_back(lit.toInt());
     else{
         assert(qType(lit) == RANDOM);
-        cout <<"Recorded random implication "<< lit.toInt()<<endl;
         random_imp_.push_back(lit.toInt());
     }
   }
@@ -153,8 +152,12 @@ void Solver::solve(const string &file_name) {
 
   if (notfoundUNSAT) {
 	  if(num_variables() == 0){
+        // TODO: Check whether this is affected by HardWireAndCompact
 		  statistics_.exit_state_ = SUCCESS;
 		  statistics_.set_final_solution_count(1.0);
+          if(config_.compile_DNNF){
+            stack_.top().getNode()->addDescendant(trace_->getConstant(1));
+          }
   }else{
 
     if (!config_.quiet) {
@@ -183,6 +186,10 @@ void Solver::solve(const string &file_name) {
     statistics_.exit_state_ = SUCCESS;
     statistics_.set_final_solution_count(0.0);
     cout << endl << " FOUND UNSAT DURING PREPROCESSING " << endl;
+
+    if(config_.compile_DNNF){
+        stack_.top().getNode()->addDescendant(trace_->getConstant(0));
+    }
   }
   cout << "End of Solving" << endl;
   if(config_.strategy_generation){
@@ -266,6 +273,9 @@ SOLVER_StateT Solver::countSSAT() {
       if (res == BACKTRACK)
         break;
       assert(state_.name != STATE_ASSERTION_PENDING);
+    }
+    if(config_.compile_DNNF){
+        stack_.top().getNode()->addDescendant(trace_->getConstant(1));
     }
 
     res = backtrack();
@@ -385,6 +395,7 @@ retStateT Solver::backtrack() {
         Node* n = stack_.top().getNode();
         assert(n);
         n->removeAllDescendants(n->getCurrentBranch());
+        n->addDescendant(trace_->getConstant(0));
       }
     }
     else if (stack_.top().anotherCompProcessible())
@@ -525,7 +536,6 @@ bool Solver::bcp() {
           exist_imp_.push_back(lit.toInt());
         else{
             assert(qType(lit) == RANDOM);
-            cout <<"Recorded random implication "<< lit.toInt()<<endl;
             random_imp_.push_back(lit.toInt());
         }
       }
@@ -568,6 +578,9 @@ bool Solver::bcp() {
       n->recordExistImplications(exist_imp_);
       n->recordRandomImplications(random_imp_);
     }
+    else{
+        stack_.top().getNode()->addDescendant(trace_->getConstant(0));
+    }
   }
 
   return bSucceeded;
@@ -592,7 +605,6 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
           }
           else{
             assert(qType(*bt) == RANDOM);
-            cout <<"Recorded random implication "<< (*bt).toInt()<<endl;
             random_imp_.push_back( (*bt).toInt() );
           }
         };
@@ -629,7 +641,6 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
             }
             else{
                 assert(qType(*p_otherLit) == RANDOM);
-                cout <<"Recorded random implication "<< (*p_otherLit).toInt()<<endl;
                 random_imp_.push_back( (*p_otherLit).toInt() );
             }
           }

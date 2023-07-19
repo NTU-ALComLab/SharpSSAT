@@ -280,6 +280,7 @@ void Trace::writeDNNF(ofstream &out)
 {
     // Use stringstream to buffer the content and add header at the end
     unsigned nVar = existID.size() - 1;
+    // cout << nNode_ << endl;
     assert(nNode_ == 0);
     assert(lit2NodeId_.empty());
     lit2NodeId_.resize((nVar + 1) << 1, -1);
@@ -290,8 +291,13 @@ void Trace::writeDNNF(ofstream &out)
     // unordered_map<Node *, WireInfo> info_map;
     assert(source_->getRefCnt() == 0);
 
+    // Print constant nodes regardless and assign their id
+    ss << "O 0 0" << endl;
+    ss << "A 0" << endl;
+    constants_[0]->DNNFId = 0;
+    constants_[1]->DNNFId = 1;
+    nNode_ = 2;
     writeDNNFRecur(source_);
-    // TODO: header
     out << "nnf " << nNode_ << ' ' << nEdge_ << ' ' << nVar << endl;
     out << ss.rdbuf();
 }
@@ -300,12 +306,18 @@ void Trace::writeDNNFRecur(Node *n)
 {
     int curr_branch = 0;
     int child[2] = {-1, -1};
-    // TODO: constant leaf nodes
     assert(n != nullptr);
     if (n->type_ == DUMMY)
     {
-        assert(n == source_);
-        ++curr_branch;
+        if (n == constants_[0] || n == constants_[1])
+        {
+            return;
+        }
+        else
+        {
+            assert(n == source_);
+            ++curr_branch;
+        }
     }
     for (; curr_branch < 2; ++curr_branch)
     {
@@ -353,6 +365,7 @@ void Trace::writeDNNFRecur(Node *n)
             child[curr_branch] = nNode_;
             ++nNode_;
             size_t n = ei.size() + ri.size() + d.size();
+            nEdge_ += n;
             int cnt = 0;
             ss << "A " << n << ' ';
             for (int l : ei)
@@ -391,21 +404,15 @@ void Trace::writeDNNFRecur(Node *n)
         // Single decision node
         else
         {
-            // assert(d.size() == 1);
-            if (d.empty())
-            {
-                // TODO: leaf
-                return;
-            }
-            else
-            {
-                child[curr_branch] = d[0]->DNNFId;
-            }
+            // Original empty decision is replaced with constant node
+            assert(d.size() == 1);
+            child[curr_branch] = d[0]->DNNFId;
         }
     }
     // Create OR node
     if (n->type_ != DUMMY)
     {
+        nEdge_ += 2;
         ss << "O " << n->decVar_ << "2 " << child[0] << ' ' << child[1] << endl;
     }
 }

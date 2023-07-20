@@ -28,7 +28,7 @@ class Node{
 public:
     Node(NodeType t=DUMMY): type_(t), refCnt_(0), decVar_(0), curBranch_(0), visited_(0){
         Node::nodeCnt_++;
-    };
+    }
 
     ~Node(){ Node::nodeCnt_--; }
 
@@ -123,7 +123,7 @@ private:
 // the trace is a DAG of single source
 class Trace{
 public:
-    Trace(Node* s, Node* zero, Node* one): source_(s),constants_{zero,one}{};
+    Trace(Node* s, Node* zero, Node* one): source_(s),constants_{zero,one}{ constants_[0]->increaseRefCnt(); constants_[1]->increaseRefCnt();};
 
     Trace(): source_(NULL) {};
 

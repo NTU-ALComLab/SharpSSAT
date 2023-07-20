@@ -353,10 +353,9 @@ void Trace::writeDNNFRecur(Node *n)
         {
             if (dec->DNNFId == -1)
             {
-                dec->DNNFId = nNode_;
-                ++nNode_;
                 writeDNNFRecur(dec);
             }
+            assert(dec->DNNFId <= int(nNode_));
         }
         // curr_node[curr_branch] is an AND-node
         if (!ei.empty() || !ri.empty() || d.size() > 1)
@@ -412,8 +411,11 @@ void Trace::writeDNNFRecur(Node *n)
     // Create OR node
     if (n->type_ != DUMMY)
     {
+        assert(n->DNNFId == -1);
+        n->DNNFId = nNode_;
+        ++nNode_;
         nEdge_ += 2;
-        ss << "O " << n->decVar_ << "2 " << child[0] << ' ' << child[1] << endl;
+        ss << "O " << n->decVar_ << " 2 " << child[0] << ' ' << child[1] << endl;
     }
 }
 

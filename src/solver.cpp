@@ -275,7 +275,10 @@ SOLVER_StateT Solver::countSSAT() {
       assert(state_.name != STATE_ASSERTION_PENDING);
     }
     if(config_.compile_DNNF){
-        stack_.top().getNode()->addDescendant(trace_->getConstant(1));
+        Node* node = stack_.top().getNode();
+        if(node->empty()){
+            node->addDescendant(trace_->getConstant(1));
+        }
     }
 
     res = backtrack();

@@ -408,14 +408,14 @@ void Trace::writeDNNFRecur(Node *n)
             child[curr_branch] = d[0]->DNNFId;
         }
     }
-    // Create OR node
+    // Create decision node
     if (n->type_ != DUMMY)
     {
         assert(n->DNNFId == -1);
         n->DNNFId = nNode_;
         ++nNode_;
         nEdge_ += 2;
-        ss << "O " << n->decVar_ << " 2 " << child[0] << ' ' << child[1] << endl;
+        ss << "D " << n->decVar_ << child[0] << ' ' << child[1] << endl;
     }
 }
 

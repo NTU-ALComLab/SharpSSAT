@@ -415,7 +415,7 @@ void Trace::writeDNNFRecur(Node *n)
         n->DNNFId = nNode_;
         ++nNode_;
         nEdge_ += 2;
-        ss << "D " << n->decVar_ << child[0] << ' ' << child[1] << endl;
+        ss << "D " << n->decVar_ <<' ' << child[0] << ' ' << child[1] << endl;
     }
 }
 

@@ -89,7 +89,7 @@ public:
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
     bool empty() const{
-        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty()&descendants_[curBranch_].empty();
+        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty() & descendants_[curBranch_].empty();
     }
 
     friend Trace;

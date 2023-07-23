@@ -405,6 +405,10 @@ void Trace::writeDNNFRecur(Node *n)
         {
             // Original empty decision is replaced with constant node
             assert(d.size() == 1);
+            // if(d.size() == 1)
+            //     child[curr_branch] = d[0]->DNNFId;
+            // else
+            //     child[curr_branch] = -50;
             child[curr_branch] = d[0]->DNNFId;
         }
     }

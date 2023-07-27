@@ -404,7 +404,8 @@ retStateT Solver::backtrack() {
     else if (stack_.top().anotherCompProcessible())
       return PROCESS_COMPONENT;
 
-    if ( !stack_.top().isSecondBranch() && stack_.top().needSecondBranch() ) {
+    // Force explore both branch if compile_DNNF is true
+    if ( !stack_.top().isSecondBranch() && (stack_.top().needSecondBranch() || config_.compile_DNNF) ) {
       LiteralID aLit = TOS_decLit();
       assert(stack_.get_decision_level() > 0);
       stack_.top().changeBranch();
@@ -417,11 +418,12 @@ retStateT Solver::backtrack() {
       setState(STATE_ASSERTION_PENDING);
       return RESOLVED;
     }
-    // Exist early termination: mark second branch as constant zero
+    // // Exist early termination: mark second branch as constant zero
     if (!stack_.top().isSecondBranch() && config_.compile_DNNF) {
-        Node* node = stack_.top().getNode();
-        node->changeBranch();
-        node->addDescendant(trace_->getConstant(0));
+        assert(false);
+        // Node* node = stack_.top().getNode();
+        // node->changeBranch();
+        // node->addDescendant(trace_->getConstant(0));
     }
     // OTHERWISE:  backtrack further
     // NOTE for ssat

@@ -73,6 +73,9 @@ public:
   void setTimeBound(long int i) {
     stopwatch_.setTimeBound(i);
   }
+  void setDNNFName(const string& s) {
+    DNNF_filename_ = s;
+  }
 
 private:
   SolverState state_;
@@ -93,9 +96,10 @@ private:
   unsigned long last_ccl_cleanup_time_ = 0;
 
   Trace*        trace_;
-  ofstream      out_file_;   // output strategy file
-  vector<int>   exist_imp_;  // temp vec holding exist implication literals
-  vector<int>   random_imp_; // temp vec holding random implication literals
+  ofstream      out_file_;      // output strategy file
+  vector<int>   exist_imp_;     // temp vec holding exist implication literals
+  vector<int>   random_imp_;    // temp vec holding random implication literals
+  string        DNNF_filename_; // output dec-DNNF filname
 
   bool simplePreProcess();
   bool prepFailedLiteralTest();

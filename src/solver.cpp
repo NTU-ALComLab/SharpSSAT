@@ -204,7 +204,7 @@ void Solver::solve(const string &file_name) {
     statistics_.set_num_nodes(trace_->numNodes());
     statistics_.set_num_edges(trace_->numEdges());
     // TODO: change DNNF name
-    generateDNNF("./test.nnf");
+    generateDNNF(DNNF_filename_);
   }
   stopwatch_.stop();
   statistics_.time_elapsed_ = stopwatch_.getElapsedSeconds();

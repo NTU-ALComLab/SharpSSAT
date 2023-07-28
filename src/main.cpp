@@ -32,16 +32,16 @@ int main(int argc, char *argv[]) {
     cout << "Options: " << endl;
     // cout << "\t -noPP  \t turn off preprocessing" << endl;
     //cout << "\t -noNCB \t turn off nonchronological backtracking" << endl;
-    cout << "\t -q     \t quiet mode" << endl;
-    cout << "\t -t [s] \t set time bound to s seconds" << endl;
-    cout << "\t -noCC  \t turn off component caching" << endl;
-    cout << "\t -noCL  \t turn off clause learning" << endl;
-    cout << "\t -cs [n]\t set max cache size to n MB" << endl;
-    cout << "\t -s     \t ssat solving" << endl;
-    cout << "\t -p     \t turn on pure literal detection" << endl;
-    cout << "\t -c     \t turn on pure component detection" << endl;
-    cout << "\t -k     \t turn on strategy generation"  << endl;
-    cout << "\t -d     \t turn on d-DNNF writing"  << endl;
+    cout << "\t -q       \t quiet mode" << endl;
+    cout << "\t -t [s]   \t set time bound to s seconds" << endl;
+    cout << "\t -noCC    \t turn off component caching" << endl;
+    cout << "\t -noCL    \t turn off clause learning" << endl;
+    cout << "\t -cs [n]  \t set max cache size to n MB" << endl;
+    cout << "\t -s       \t ssat solving" << endl;
+    cout << "\t -p       \t turn on pure literal detection" << endl;
+    cout << "\t -c       \t turn on pure component detection" << endl;
+    cout << "\t -k       \t turn on strategy generation"  << endl;
+    cout << "\t -d [file]\t turn on dec-DNNF writing"  << endl;
     cout << "\t" << endl;
 
     return -1;
@@ -52,17 +52,24 @@ int main(int argc, char *argv[]) {
 //      theSolver.config().perform_non_chron_back_track = false;
     if ( strcmp(argv[i], "-k")==0 )
       theSolver.config().strategy_generation = true;
-    if ( strcmp(argv[i], "-d")==0 )
-      theSolver.config().compile_DNNF = true;
-    if ( strcmp(argv[i], "-c")==0 )
+    else if ( strcmp(argv[i], "-d")==0 ) {
+        theSolver.config().compile_DNNF = true;
+        if (argc <= i + 1) {
+        cout << " wrong parameters" << endl;
+        return -1;
+      }
+      theSolver.setDNNFName(argv[i + 1]);
+      ++i;
+    }
+    else if ( strcmp(argv[i], "-c")==0 )
       theSolver.config().perform_pure_component = true;
-    if ( strcmp(argv[i], "-p")==0 )
+    else if ( strcmp(argv[i], "-p")==0 )
       theSolver.config().perform_pure_literal = true;
-    if ( strcmp(argv[i], "-s")==0 )
+    else if ( strcmp(argv[i], "-s")==0 )
       theSolver.config().ssat_solving = true;
-    if (strcmp(argv[i], "-noCC") == 0)
+    else if (strcmp(argv[i], "-noCC") == 0)
       theSolver.config().perform_component_caching = false;
-    if (strcmp(argv[i], "-noCL") == 0)
+    else if (strcmp(argv[i], "-noCL") == 0)
       theSolver.config().perform_clause_learning= false;
     else if (strcmp(argv[i], "-q") == 0)
       SolverConfiguration::quiet = true;

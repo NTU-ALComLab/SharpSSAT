@@ -30,6 +30,9 @@ bool Solver::simplePreProcess() {
 //BEGIN process unit clauses
   for (auto lit : unit_clauses_){
     setLiteralIfFree(lit);
+    if(literal_values_[lit] != T_TRI){
+        return false;
+    }
     stack_.top().includePathProb( prob(lit) );
     if(qType(lit)==EXISTENTIAL)
       exist_imp_.push_back(lit.toInt());

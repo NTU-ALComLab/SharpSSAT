@@ -409,8 +409,8 @@ retStateT Solver::backtrack() {
     else if (stack_.top().anotherCompProcessible())
       return PROCESS_COMPONENT;
 
-    // Force explore both branch if compile_DNNF is true
-    if ( !stack_.top().isSecondBranch() && (stack_.top().needSecondBranch() || config_.compile_DNNF) ) {
+    // Force explore both branch if compile_DNNF is true and pure literal is not enabled
+    if ( !stack_.top().isSecondBranch() && (stack_.top().needSecondBranch() || (config_.compile_DNNF && !config_.perform_pure_literal)) ) {
       LiteralID aLit = TOS_decLit();
       assert(stack_.get_decision_level() > 0);
       stack_.top().changeBranch();

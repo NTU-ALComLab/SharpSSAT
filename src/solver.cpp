@@ -53,8 +53,6 @@ bool Solver::simplePreProcess() {
       double assert_prob_ = stack_.top().getCurPathProb();
       LiteralIndexedVector<TriValue> lv = LiteralIndexedVector<TriValue>(literal_values_);
       HardWireAndCompact();
-      if(config_.strategy_generation || config_.compile_DNNF)
-        initTrace();
       literal_values_ = lv;
       stack_.top().includePathProb(assert_prob_);
       if(config_.strategy_generation || config_.compile_DNNF){
@@ -140,6 +138,8 @@ void Solver::solve(const string &file_name) {
 
   createfromFile(file_name);
   initStack(num_variables());
+  if(config_.strategy_generation || config_.compile_DNNF)
+    initTrace();
 
   if (!config_.quiet) {
     cout << "Solving " << file_name << endl;

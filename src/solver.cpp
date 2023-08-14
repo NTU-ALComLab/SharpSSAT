@@ -425,10 +425,10 @@ retStateT Solver::backtrack() {
     }
     // // Exist early termination: mark second branch as constant zero
     if (!stack_.top().isSecondBranch() && config_.compile_DNNF) {
-        assert(false);
-        // Node* node = stack_.top().getNode();
-        // node->changeBranch();
-        // node->addDescendant(trace_->getConstant(0));
+        // assert(false);
+        Node* node = stack_.top().getNode();
+        node->changeBranch();
+        node->addDescendant(trace_->getConstant(0));
     }
     // OTHERWISE:  backtrack further
     // NOTE for ssat

@@ -129,6 +129,8 @@ void Solver::HardWireAndCompact() {
   statistics_.num_original_unit_clauses_ = statistics_.num_unit_clauses_ =
       unit_clauses_.size();
   initStack(num_variables());
+  if(config_.strategy_generation || config_.compile_DNNF)
+    initTrace();
   original_lit_pool_size_ = literal_pool_.size();
 }
 

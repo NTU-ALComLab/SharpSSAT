@@ -98,16 +98,15 @@ int main(int argc, char *argv[]) {
       input_file = argv[i];
   }
 
-  if(theSolver.config().certification_generation){      // test code
-    string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
-    cout << "certfication written to " << output_file << endl;
-    return 0;
-  }
   theSolver.solve(input_file);
   if(theSolver.config().strategy_generation){
     string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
     cout << "strategy written to " << output_file << endl;
     theSolver.generateStrategy(output_file);
+  }
+  if(theSolver.config().certification_generation){
+    string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
+    cout << "certfication written to " << output_file << endl;
   }
   return 0;
 }

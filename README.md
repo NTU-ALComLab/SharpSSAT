@@ -31,6 +31,11 @@ $ SharpSSAT -s -k [SDIMACS_File]`
 ```
 then the witness (Skolem functions), written in a BLIF file, will be generated in the same directory as the SDIMACS_File.
 
+To enable certification generation, run the command:
+```
+$ SharpSSAT -s -l [SDIMACS_File]`
+```
+
 ## Reference
 * [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):
   ```

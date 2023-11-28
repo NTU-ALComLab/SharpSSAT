@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -c       \t turn on pure component detection" << endl;
     cout << "\t -k       \t turn on strategy generation"  << endl;
     cout << "\t -d [file]\t turn on dec-DNNF writing"  << endl;
+    cout << "\t -l       \t turn on certfication generation"  << endl;
     cout << "\t" << endl;
 
     return -1;
@@ -52,6 +53,8 @@ int main(int argc, char *argv[]) {
 //      theSolver.config().perform_non_chron_back_track = false;
     if ( strcmp(argv[i], "-k")==0 )
       theSolver.config().strategy_generation = true;
+    else if ( strcmp(argv[i], "-l")==0 )
+        theSolver.config().certification_generation = true;
     else if ( strcmp(argv[i], "-d")==0 ) {
         theSolver.config().compile_DNNF = true;
         if (argc <= i + 1) {
@@ -61,15 +64,15 @@ int main(int argc, char *argv[]) {
       theSolver.setDNNFName(argv[i + 1]);
       ++i;
     }
-    else if ( strcmp(argv[i], "-c")==0 )
+    if ( strcmp(argv[i], "-c")==0 )
       theSolver.config().perform_pure_component = true;
-    else if ( strcmp(argv[i], "-p")==0 )
+    if ( strcmp(argv[i], "-p")==0 )
       theSolver.config().perform_pure_literal = true;
-    else if ( strcmp(argv[i], "-s")==0 )
+    if ( strcmp(argv[i], "-s")==0 )
       theSolver.config().ssat_solving = true;
-    else if (strcmp(argv[i], "-noCC") == 0)
+    if (strcmp(argv[i], "-noCC") == 0)
       theSolver.config().perform_component_caching = false;
-    else if (strcmp(argv[i], "-noCL") == 0)
+    if (strcmp(argv[i], "-noCL") == 0)
       theSolver.config().perform_clause_learning= false;
     else if (strcmp(argv[i], "-q") == 0)
       SolverConfiguration::quiet = true;
@@ -83,16 +86,23 @@ int main(int argc, char *argv[]) {
       theSolver.config().time_bound_seconds = atol(argv[i + 1]);
       if (theSolver.config().verbose)
         cout << "time bound set to" << theSolver.config().time_bound_seconds << "s\n";
-    } else if (strcmp(argv[i], "-cs") == 0) {
+    }
+    else if (strcmp(argv[i], "-cs") == 0) {
       if (argc <= i + 1) {
         cout << " wrong parameters" << endl;
         return -1;
       }
       theSolver.config().maximum_cache_size_bytes = atol(argv[i + 1]) * 1000000;
-    } else
+    }
+    else
       input_file = argv[i];
   }
 
+  if(theSolver.config().certification_generation){      // test code
+    string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
+    cout << "certfication written to " << output_file << endl;
+    return 0;
+  }
   theSolver.solve(input_file);
   if(theSolver.config().strategy_generation){
     string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");

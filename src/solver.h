@@ -65,7 +65,7 @@ public:
   void solve(const string & file_name);
   void generateStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
-  void generateCertificate(const string& up, const string& low);
+  void generateCertificate(const string & up, const string & low);
 
   SolverConfiguration &config() {
     return config_;

@@ -1089,7 +1089,7 @@ void Solver::generateDNNF(const string& output_file){
   out.close();
 }
 
-void generateCertificate(const string& up, const string& low)
+void Solver::generateCertificate(const string& up, const string& low)
 {
 }
 

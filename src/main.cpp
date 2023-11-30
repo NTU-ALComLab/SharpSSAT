@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -c       \t turn on pure component detection" << endl;
     cout << "\t -k       \t turn on strategy generation"  << endl;
     cout << "\t -d [file]\t turn on dec-DNNF writing"  << endl;
-    cout << "\t -l       \t turn on certfication generation"  << endl;
+    cout << "\t -l       \t turn on certficate generation"  << endl;
     cout << "\t" << endl;
 
     return -1;
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     if ( strcmp(argv[i], "-k")==0 )
       theSolver.config().strategy_generation = true;
     else if ( strcmp(argv[i], "-l")==0 )
-        theSolver.config().certification_generation = true;
+        theSolver.config().certificate_generation = true;
     else if ( strcmp(argv[i], "-d")==0 ) {
         theSolver.config().compile_DNNF = true;
         if (argc <= i + 1) {
@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
     cout << "strategy written to " << output_file << endl;
     theSolver.generateStrategy(output_file);
   }
-  if(theSolver.config().certification_generation){
+  if(theSolver.config().certificate_generation){
     string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
     cout << "certfication written to " << output_file << endl;
   }

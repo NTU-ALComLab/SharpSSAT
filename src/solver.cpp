@@ -55,7 +55,7 @@ bool Solver::simplePreProcess() {
       HardWireAndCompact();
       literal_values_ = lv;
       stack_.top().includePathProb(assert_prob_);
-      if(config_.strategy_generation || config_.compile_DNNF){
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         stack_.top().getNode()->recordExistImplications(exist_imp_);
         stack_.top().getNode()->recordRandomImplications(random_imp_);
       }
@@ -129,8 +129,10 @@ void Solver::HardWireAndCompact() {
   statistics_.num_original_unit_clauses_ = statistics_.num_unit_clauses_ =
       unit_clauses_.size();
   initStack(num_variables());
-  if(config_.strategy_generation || config_.compile_DNNF)
+
+  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
     initTrace();
+
   original_lit_pool_size_ = literal_pool_.size();
 }
 
@@ -140,7 +142,7 @@ void Solver::solve(const string &file_name) {
 
   createfromFile(file_name);
   initStack(num_variables());
-  if(config_.strategy_generation || config_.compile_DNNF)
+  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
     initTrace();
 
   if (!config_.quiet) {
@@ -160,7 +162,7 @@ void Solver::solve(const string &file_name) {
         // TODO: Check whether this is affected by HardWireAndCompact
 		  statistics_.exit_state_ = SUCCESS;
 		  statistics_.set_final_solution_count(1.0);
-          if(config_.compile_DNNF){
+          if(config_.compile_DNNF || config_.certificate_generation){
             stack_.top().getNode()->addDescendant(trace_->getConstant(1)); // laurenl: SSAT formula is const TRUE
           }
   }else{
@@ -192,7 +194,7 @@ void Solver::solve(const string &file_name) {
     statistics_.set_final_solution_count(0.0);
     cout << endl << " FOUND UNSAT DURING PREPROCESSING " << endl;
 
-    if(config_.compile_DNNF){
+    if(config_.compile_DNNF || config_.certificate_generation){
         stack_.top().getNode()->addDescendant(trace_->getConstant(0)); // laurenl: SSAT formula is constant FALSE 
     }
   }
@@ -210,6 +212,14 @@ void Solver::solve(const string &file_name) {
     statistics_.set_num_edges(trace_->numEdges());
     // TODO: change DNNF name
     generateDNNF(DNNF_filename_);
+  }
+  else if(config_.certificate_generation){
+    cout << "Start Generating Certificate..." << endl;
+    Node::resetGlobalVisited();
+    statistics_.set_num_nodes(trace_->numNodes());
+    statistics_.set_num_edges(trace_->numEdges())
+    // laurenl TODO
+    // generateDNNF(DNNF_filename_);
   }
   stopwatch_.stop();
   statistics_.time_elapsed_ = stopwatch_.getElapsedSeconds();
@@ -291,9 +301,9 @@ SOLVER_StateT Solver::countSSAT() {
 				first branch 0 second branch 1 : A(bcp=0) -> B(res=RESOLVED) -> A(bcp=1) -> B(res=RESOLVED) ->  continue branching on second branch
 	*/
 
-    if(config_.compile_DNNF){
+    if(config_.compile_DNNF || config_.certificate_generation){
         Node* node = stack_.top().getNode();
-        if(node->empty()){									// laurenl: the node has no descendant, exist implications, random implications 
+        if(node->empty()){									// laurenl: the node has no descendant, exist implications, random implications, pure literals
             node->addDescendant(trace_->getConstant(1));
         }
     }
@@ -411,7 +421,7 @@ retStateT Solver::backtrack() {
   do {
     if (stack_.top().branch_found_unsat()){
       component_analyzer_.removeAllCachePollutionsOf(stack_.top());
-      if(config_.strategy_generation || config_.compile_DNNF){
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         Node* n = stack_.top().getNode();
         assert(n);
         n->removeAllDescendants(n->getCurrentBranch());
@@ -423,11 +433,12 @@ retStateT Solver::backtrack() {
 
 
     // Force explore both branch if compile_DNNF is true and pure literal is not enabled
-    if ( !stack_.top().isSecondBranch() && (stack_.top().needSecondBranch() || (config_.compile_DNNF && !config_.perform_pure_literal)) ) {
+    if ( !stack_.top().isSecondBranch() 
+         && (stack_.top().needSecondBranch() || (config_.compile_DNNF  && !config_.perform_pure_literal))) {
       LiteralID aLit = TOS_decLit();
       assert(stack_.get_decision_level() > 0);
       stack_.top().changeBranch();
-      if(config_.strategy_generation || config_.compile_DNNF){
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){ 
         assert(stack_.top().getNode());
         stack_.top().getNode()->changeBranch();
       }
@@ -435,19 +446,31 @@ retStateT Solver::backtrack() {
       setLiteralIfFree(aLit.neg(), NOT_A_CLAUSE);
       setState(STATE_ASSERTION_PENDING);
       return RESOLVED;
-    }																		
-    // // Exist early termination: mark second branch as constant zero
-    if (!stack_.top().isSecondBranch() && config_.compile_DNNF) {
-        // assert(false);
-        Node* node = stack_.top().getNode();
+    }                                                                       
+    /* laurenl: Reaching condition
+                case1:  stack_.top().isSecondBranch() => on second branch => should either backtrack or change component 
+                case2:  !stack_.top().isSecondBranch() && !stack_.top().needSecondBranch() && !config_.compile_DNNF && !config_.certificate_generation
+                        => on first branch, first_branch_prob = 1 => no need to update second branch for DNNF 
+                                                                     still need to update second branch for certificate
+                case3:  !stack_.top().isSecondBranch() && !stack_.top().needSecondBranch() 
+                        && config_.compile_DNNF  && config_.perform_literal
+                        => on first branch, first_branch_prob = 1 => should set the second branch of DNNFe
+     */
+
+    if (!stack_.top().isSecondBranch() && (config_.compile_DNNF || config_.certificate_generation)) 
+    {   // laurenl: case2 or case33
+        // assert(false);                                                   
+        Node* node = stack_.top().getNode();                                
         node->changeBranch();
         node->addDescendant(trace_->getConstant(0));
-    }																		// laurenl: the first branch is set to false during bcp()
+        node->setHasEarlyReturn();
+    }																		
+
     // OTHERWISE:  backtrack further
     // NOTE for ssat
     if(config_.ssat_solving){
-      double p = stack_.top().getTotalSatProb();							// laurenl: exist p = max(p0,p1), random p = (1-pr)*p0 + pr*p1
-      if(config_.strategy_generation || config_.compile_DNNF){
+      double p = stack_.top().getTotalSatProb();	
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         Node* n = stack_.top().getNode();
         assert(n);
         if(n->isExist()) {
@@ -470,8 +493,8 @@ retStateT Solver::backtrack() {
     assert(stack_.size()>=2);
     // NOTE for ssat
     if(config_.ssat_solving){
-      (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());
-      if(config_.strategy_generation || config_.compile_DNNF){
+      (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());         // laurenl: calculate parent probability
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         assert((stack_.end()-2)->getNode());
         assert(stack_.top().getNode());
         ((stack_.end()-2)->getNode())->addDescendant(stack_.top().getNode());	// laurenl: connect parent node with child node
@@ -479,11 +502,11 @@ retStateT Solver::backtrack() {
     }
     else
       (stack_.end() - 2)->includeSolution(stack_.top().getTotalModelCount());
-    stack_.pop_back();
+    stack_.pop_back();                                                          // laurenl: bracktracked here 
 
     // step to the next component not yet processed
     if(config_.ssat_solving && config_.perform_thresholding){
-      if( !stack_.top().needSecondBranch() && stack_.top().isSecondBranch()){
+      if( !stack_.top().needSecondBranch() && stack_.top().isSecondBranch()){   
         if (stack_.get_decision_level() <= 0) break;
         reactivateTOS();
         (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());
@@ -492,7 +515,7 @@ retStateT Solver::backtrack() {
       stack_.top().nextUnprocessedComponent();
     }
     else
-      stack_.top().nextUnprocessedComponent();
+      stack_.top().nextUnprocessedComponent();                                                                    
 
     assert(
         stack_.top().remaining_components_ofs() < component_analyzer_.component_stack_size()+1);
@@ -548,7 +571,7 @@ bool Solver::bcp() {
 // bcp on that literal
   unsigned start_ofs = literal_stack_.size() - 1;
 
-  if(config_.strategy_generation || config_.compile_DNNF){
+  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
     exist_imp_.clear();
     random_imp_.clear();
   }
@@ -560,7 +583,7 @@ bool Solver::bcp() {
     if(setLiteralIfFree(lit)){
       //cout << "assign unit clause" << endl;
       stack_.top().includePathProb( prob(lit) );
-      if(config_.strategy_generation || config_.compile_DNNF){
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         if(qType(lit)==EXISTENTIAL)
           exist_imp_.push_back(lit.toInt());
         else{
@@ -601,7 +624,7 @@ bool Solver::bcp() {
     }
   }
 
-  if(config_.strategy_generation || config_.compile_DNNF){				
+  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){				
     if(bSucceeded){
       Node* n = stack_.top().getNode();									// laurenl: bcp literals recorded
       n->recordExistImplications(exist_imp_);							
@@ -611,7 +634,6 @@ bool Solver::bcp() {
         stack_.top().getNode()->addDescendant(trace_->getConstant(0));	// laurenl: encounter conflict, set the branch to FALSE
     }
   }
-
   return bSucceeded;
 }
 
@@ -628,7 +650,7 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
       }
       if(setLiteralIfFree(*bt, Antecedent(unLit))){
         stack_.top().includePathProb( prob(*bt) );
-        if(config_.strategy_generation || config_.compile_DNNF){
+        if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
           if(qType(*bt)==EXISTENTIAL){
             exist_imp_.push_back( (*bt).toInt() );
           }
@@ -664,7 +686,7 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         // for p_otherLit remain poss: Active or Resolved
         if (setLiteralIfFree(*p_otherLit, Antecedent(*itcl))) { // implication
           stack_.top().includePathProb( prob(*p_otherLit) );
-          if(config_.strategy_generation || config_.compile_DNNF){
+          if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
             if(qType(*p_otherLit)==EXISTENTIAL){
               exist_imp_.push_back( (*p_otherLit).toInt() );
             }

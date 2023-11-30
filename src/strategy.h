@@ -86,10 +86,20 @@ public:
         randomImp_[curBranch_].push_back(imp);
     }
 
+    void recordPureLiterals(vector<int>& plit){
+        pureLits_[curBranch_] = plit;
+    }
+
+    void addPureLiteral(int plit){
+        pureLits_[curBranch_].push_back(plit);
+    }
+    void setHasEarlyReturn(){ hasEarlyReturn_ = true; }
+ }
+
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
     bool empty() const{
-        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty() & descendants_[curBranch_].empty();
+        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty() & descendants_[curBranch_].empty() & pureLits_[curBranch_].empty();
     }
 
     friend Trace;
@@ -107,6 +117,8 @@ private:
     bool            curBranch_; 
     vector<int>     existImp_[2];   // existential implications 
     vector<int>     randomImp_[2];  // random implications 
+    vector<int>     pureLits_[2];   // pure literals
+    bool            hasEarlyReturn_ = false;
 
 
     // debug data member;

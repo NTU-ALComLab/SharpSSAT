@@ -426,7 +426,7 @@ bool ComponentAnalyzer::recordRemainingCompsFor(StackLevel &top) {
 								tmp_sat_prob, node)) {
 								
 								top.includeSatProb(tmp_sat_prob);
-								if(config_.strategy_generation || config_.compile_DNNF){
+								if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generate){
 									assert(node);
 									assert(top.getNode()!=node);
 									top.getNode()->addDescendant(node);
@@ -574,12 +574,16 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
                 if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( (*vt) );
                 }
+                if(config_.certificate_generation)
+				    top.getNode()->addPureLiteral( (*vt) );
 			}
 			else if( pos_var_seen_[*vt]==0 && neg_var_seen_[*vt] ){
 				pureEliminate(*vt, neg_start_ofs);
                 if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( -(*vt) );
                 }
+                if(config_.certificate_generation)
+                    top.getNode()->addPureLiteral( -(*vt) );
 			}
 		}
 

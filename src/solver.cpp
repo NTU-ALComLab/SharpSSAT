@@ -217,7 +217,7 @@ void Solver::solve(const string &file_name) {
     cout << "Start Generating Certificate..." << endl;
     Node::resetGlobalVisited();
     statistics_.set_num_nodes(trace_->numNodes());
-    statistics_.set_num_edges(trace_->numEdges())
+    statistics_.set_num_edges(trace_->numEdges());
     // laurenl TODO
     // generateDNNF(DNNF_filename_);
   }

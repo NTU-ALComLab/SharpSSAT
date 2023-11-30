@@ -94,7 +94,6 @@ public:
         pureLits_[curBranch_].push_back(plit);
     }
     void setHasEarlyReturn(){ hasEarlyReturn_ = true; }
- }
 
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 

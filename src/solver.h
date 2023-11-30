@@ -65,6 +65,7 @@ public:
   void solve(const string & file_name);
   void generateStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
+  void generateCertificate(const string& up, const string& low);
 
   SolverConfiguration &config() {
     return config_;
@@ -75,6 +76,11 @@ public:
   }
   void setDNNFName(const string& s) {
     DNNF_filename_ = s;
+  }
+  void setCertificateName(const string& up, const string& low)
+  {
+    upperTrace_filename_ = up;
+    lowerTrace_filename_ = low;  
   }
 
 private:
@@ -100,6 +106,8 @@ private:
   vector<int>   exist_imp_;     // temp vec holding exist implication literals
   vector<int>   random_imp_;    // temp vec holding random implication literals
   string        DNNF_filename_; // output dec-DNNF filname
+  string        upperTrace_filename_;   // output certificate filname
+  string        lowerTrace_filename_;   // output certificate filname
 
   bool simplePreProcess();
   bool prepFailedLiteralTest();

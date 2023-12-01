@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     string upTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_up.nnf");
     cout << "upper trace written to " << upTrace_file << endl;
     string lowTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_low.nnf");
-    cout << "lower trace written to " << lowTrace_file << endl
+    cout << "lower trace written to " << lowTrace_file << endl;
     theSolver.generateCertificate(upTrace_file, lowTrace_file);
   }
   return 0;

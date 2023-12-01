@@ -313,14 +313,15 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
     out<<"o "<<node->DNNFId<<" 0\n";
     for (; curr_branch < 2; ++curr_branch)
     {
+        vector<int> &ei = node->existImp_[curr_branch];
+        vector<int> &ri = node->randomImp_[curr_branch];
+        vector<int> &pl = node->pureLits_[curr_branch];
+        vector<Node *> &d = node->descendants_[curr_branch];
+
         if( curr_branch == 1 && node->hasEarlyReturn_ )
-            child[curr_branch] = (isUp ? : constants_[1]->DNNFId : constants_[0]->DNNFId );
+            child[curr_branch] = (isUp ? constants_[1]->DNNFId : constants_[0]->DNNFId );
         else
         {
-            vector<int> &ei = node->existImp_[curr_branch];
-            vector<int> &ri = node->randomImp_[curr_branch];
-            vector<int> &pl = node->pureLits_[curr_branch];
-            vector<Node *> &d = node->descendants_[curr_branch];
 
             // create used decision nodes
             for (Node *dec : d)

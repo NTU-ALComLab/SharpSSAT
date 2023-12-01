@@ -1090,11 +1090,11 @@ void Solver::generateDNNF(const string& output_file){
 void Solver::generateCertificate(const string& up, const string& low)
 {
   ofstream out(up);
-  trace_->writeCertificate(up, 1);
+  trace_->writeCertificate(out, true);
   out.close();
 
   out.open(low);
-  trace->writeCertificate(low, 0);
+  trace_->writeCertificate(out, false);
   out.close();
 }
 

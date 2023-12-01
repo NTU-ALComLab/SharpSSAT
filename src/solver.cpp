@@ -218,8 +218,6 @@ void Solver::solve(const string &file_name) {
     Node::resetGlobalVisited();
     statistics_.set_num_nodes(trace_->numNodes());
     statistics_.set_num_edges(trace_->numEdges());
-    // laurenl TODO
-    generateCertificate(upperTrace_filename_, lowerTrace_filename_);
   }
   stopwatch_.stop();
   statistics_.time_elapsed_ = stopwatch_.getElapsedSeconds();
@@ -1091,5 +1089,12 @@ void Solver::generateDNNF(const string& output_file){
 
 void Solver::generateCertificate(const string& up, const string& low)
 {
+  ofstream out(up);
+  trace_->writeCertificate(up, 1);
+  out.close();
+
+  out.open(low);
+  trace->writeCertificate(low, 0);
+  out.close();
 }
 

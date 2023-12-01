@@ -174,6 +174,9 @@ public:
     void writeStrategyToFile(ofstream&);
     void writeDNNF(ofstream&);
     void writeDNNFRecur(Node*);
+    void writeCertificate(ofstream& out, bool isUp);
+    void writeCertificateRecur(ofstream& out, Node *node, bool isUp);
+
     Node* getConstant(bool phase){ return constants_[phase]; }
 
 private:

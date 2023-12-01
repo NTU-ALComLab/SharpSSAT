@@ -274,6 +274,90 @@ void Trace::writeStrategyToFile(ofstream &out)
         }
     }
 }
+void Trace::writeCertificate(ofstream& out, bool isUp)
+{
+    assert(nNode_ == 0);
+    assert(source_->getRefCnt() == 0);
+
+    // print the constants
+    Node * zero = constants_[0];
+    Node * one  = constants_[1];
+    zero->DNNFId = 0;
+    one-> DNNFId = 1;
+    nNode_ = 2;
+    out << "f " << zero->DNNFId<<" 0\n";
+    out << "t " << one->DNNFId<<" 0\n";
+
+    writeCertificateRecur(out, source_, isUp);
+}
+void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
+{
+    int curr_branch = 0;
+    int child[2] = {-1, -1};
+    assert(node != nullptr);
+
+    if (node->type_ == DUMMY)
+    {
+        if (node == constants_[0] || node == constants_[1])
+            return;
+        else
+        {
+            assert(node == source_);
+            ++curr_branch;
+        }
+        return;
+    }
+    // Create decision node
+    assert(node->DNNFId == -1);
+    node->DNNFId = nNode_++;
+    out<<"o "<<node->DNNFId<<" 0\n";
+    for (; curr_branch < 2; ++curr_branch)
+    {
+        if( curr_branch == 1 && node->hasEarlyReturn_ )
+            child[curr_branch] = (isUp ? : constants_[1]->DNNFId : constants_[0]->DNNFId );
+        else
+        {
+            vector<int> &ei = node->existImp_[curr_branch];
+            vector<int> &ri = node->randomImp_[curr_branch];
+            vector<int> &pl = node->pureLits_[curr_branch];
+            vector<Node *> &d = node->descendants_[curr_branch];
+
+            // create used decision nodes
+            for (Node *dec : d)
+            {
+                if (dec->DNNFId == -1)
+                    writeCertificateRecur(out, dec, isUp);
+                assert(dec->DNNFId <= int(nNode_));
+            }
+            
+            if (d.size() > 1)   // curr_node[curr_branch] is an AND-node
+            {
+                // Create and record new node
+                child[curr_branch] = nNode_++;
+                int andID = child[curr_branch];
+                out << "a " << andID <<" 0\n ";
+
+                nEdge_ += d.size();
+
+                for (Node *dec : d)
+                    out<< andID <<" "<< dec->DNNFId <<" 0\n";
+            }
+            else{   // Single decision node
+                assert(d.size() == 1);
+                child[curr_branch] = d[0]->DNNFId;
+            }   
+        }
+
+        // print edge
+        nEdge_++;
+        out<< node->DNNFId <<" "<< child[curr_branch] << " ";
+        out << ( curr_branch ? "" : "-" ) << node->decVar_;
+        for (int l : ei)    out<<" "<<l;
+        for (int l : ri)    out<<" "<<l;
+        if (!isUp ){ for (int l : pl) out<<" "<<l;  }    // only print pure literal for lower trace
+        out<<" \0";
+    }
+}
 
 // Save Trace as dec-DNNF
 void Trace::writeDNNF(ofstream &out)

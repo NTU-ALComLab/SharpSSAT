@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -c                      \t turn on pure component detection" << endl;
     cout << "\t -k                      \t turn on strategy generation"  << endl;
     cout << "\t -d [file]               \t turn on dec-DNNF writing"  << endl;
-    cout << "\t -l [upTrace] [lowTrace] \t turn on certficate generation"  << endl;
+    cout << "\t -l                      \t turn on certficate generation"  << endl;
     cout << "\t" << endl;
 
     return -1;
@@ -53,15 +53,8 @@ int main(int argc, char *argv[]) {
 //      theSolver.config().perform_non_chron_back_track = false;
     if ( strcmp(argv[i], "-k")==0 )
       theSolver.config().strategy_generation = true;
-    else if ( strcmp(argv[i], "-l")==0 ){
+    else if ( strcmp(argv[i], "-l")==0 )
         theSolver.config().certificate_generation = true;
-        if (argc <= i + 2) {
-        cout << " wrong parameters" << endl;
-        return -1;
-      }
-      theSolver.setCertificateName(argv[i+1], argv[i+2]);
-      i += 2;
-    }
     else if ( strcmp(argv[i], "-d")==0 ) {
         theSolver.config().compile_DNNF = true;
         if (argc <= i + 1) {
@@ -110,6 +103,13 @@ int main(int argc, char *argv[]) {
     string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
     cout << "strategy written to " << output_file << endl;
     theSolver.generateStrategy(output_file);
+  }
+  if(theSolver.config().certificate_generation){
+    string upTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_up.nnf");
+    cout << "upper trace written to " << upTrace_file << endl;
+    string lowTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_low.nnf");
+    cout << "lower trace written to " << lowTrace_file << endl
+    theSolver.generateCertificate(upTrace_file, lowTrace_file);
   }
   return 0;
 }

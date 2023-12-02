@@ -307,7 +307,6 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         }
     }
     // Create decision node
-    assert(node->DNNFId == -1);
     node->DNNFId = ++nNode_;
     out<<"o "<<node->DNNFId<<" 0\n";
     for (; curr_branch < 2; ++curr_branch)

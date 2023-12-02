@@ -455,7 +455,7 @@ retStateT Solver::backtrack() {
      */
 
     if (!stack_.top().isSecondBranch() && (config_.compile_DNNF || config_.certificate_generation)) 
-    {   // laurenl: case2 or case33
+    {   // laurenl: case2 or case3
         // assert(false);                                                   
         Node* node = stack_.top().getNode();                                
         node->changeBranch();

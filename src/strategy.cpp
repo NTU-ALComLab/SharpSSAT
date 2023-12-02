@@ -282,9 +282,9 @@ void Trace::writeCertificate(ofstream& out, bool isUp)
     // print the constants
     Node * zero = constants_[0];
     Node * one  = constants_[1];
-    zero->DNNFId = 0;
-    one-> DNNFId = 1;
-    nNode_ = 2;
+    zero->DNNFId = ++nNode_;
+    one-> DNNFId = ++nNode_;
+    assert(nNode_ == 2);
     out << "f " << zero->DNNFId<<" 0\n";
     out << "t " << one->DNNFId<<" 0\n";
 
@@ -308,7 +308,7 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
     }
     // Create decision node
     assert(node->DNNFId == -1);
-    node->DNNFId = nNode_++;
+    node->DNNFId = ++nNode_;
     out<<"o "<<node->DNNFId<<" 0\n";
     for (; curr_branch < 2; ++curr_branch)
     {
@@ -333,9 +333,9 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
             if (d.size() > 1)   // curr_node[curr_branch] is an AND-node
             {
                 // Create and record new node
-                child[curr_branch] = nNode_++;
+                child[curr_branch] = ++nNode_;
                 int andID = child[curr_branch];
-                out << "a " << andID <<" 0\n ";
+                out << "a " << andID <<" 0\n";
 
                 nEdge_ += d.size();
 

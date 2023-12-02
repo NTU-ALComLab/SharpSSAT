@@ -276,7 +276,7 @@ void Trace::writeStrategyToFile(ofstream &out)
 }
 void Trace::writeCertificate(ofstream& out, bool isUp)
 {
-    assert(nNode_ == 0);
+    nNode_ = 0;  nEdge_ = 0;
     assert(source_->getRefCnt() == 0);
 
     // print the constants

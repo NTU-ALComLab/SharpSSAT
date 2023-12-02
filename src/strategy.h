@@ -111,11 +111,13 @@ private:
     void decreaseRefCnt(){ assert(refCnt_!=0); --refCnt_; }
     void setDNNFId( int id ){ 
         assert( !visited() );
+        assert( id >0 );
         DNNFId =  id;
         setVisited();
     }
     int getDNNFId(){ 
-        assert( visited() && DNNFId >0);
+        assert( visited() )
+        assert( DNNFId >0 );
         return DNNFId;
     }
 

@@ -301,9 +301,8 @@ SOLVER_StateT Solver::countSSAT() {
 
     if(config_.compile_DNNF || config_.certificate_generation){
         Node* node = stack_.top().getNode();
-        if(node->empty()){									// laurenl: the node has no descendant, exist implications, random implications, pure literals
+        if(node->empty(config_.certificate_generation))
             node->addDescendant(trace_->getConstant(1));
-        }
     }
 
     res = backtrack();		/* laurenl: Part C*/

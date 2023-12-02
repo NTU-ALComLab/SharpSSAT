@@ -97,8 +97,10 @@ public:
 
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
-    bool empty() const{
-        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty() & descendants_[curBranch_].empty() & pureLits_[curBranch_].empty();
+    bool empty( bool isCertGen=false ) const{
+        if (isCertGen)
+            return descendants_[curBranch_].empty();
+        return existImp_[curBranch_].empty() & randomImp_[curBranch_].empty() & descendants_[curBranch_].empty();
     }
 
     friend Trace;

@@ -321,7 +321,7 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
             child[curr_branch] = (isUp ? constants_[1]->DNNFId : constants_[0]->DNNFId );
         else
         {
-
+            assert(d.size());
             // create used decision nodes
             for (Node *dec : d)
             {
@@ -342,10 +342,8 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
                 for (Node *dec : d)
                     out<< andID <<" "<< dec->DNNFId <<" 0\n";
             }
-            else{   // Single decision node
-                assert(d.size() == 1);
+            else   // Single decision node
                 child[curr_branch] = d[0]->DNNFId;
-            }   
         }
 
         // print edge

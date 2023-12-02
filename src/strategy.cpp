@@ -353,7 +353,7 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         for (int l : ei)    out<<" "<<l;
         for (int l : ri)    out<<" "<<l;
         if (!isUp ){ for (int l : pl) out<<" "<<l;  }    // only print pure literal for lower trace
-        out<<" \0";
+        out<<" 0\n";
     }
 }
 

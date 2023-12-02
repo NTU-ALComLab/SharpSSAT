@@ -310,7 +310,6 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         }
     }
     // Create decision node
-    assert( !node->visited() );
     node->setDNNFId(++nNode_);
     out<<"o "<<node->getDNNFId()<<" 0\n";
     for (; curr_branch < 2; ++curr_branch)
@@ -328,7 +327,7 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
             // create used decision nodes
             for (Node *dec : d)
             {
-                if ( !node->visited() )
+                if ( !dec->visited() )
                     writeCertificateRecur(out, dec, isUp);
                 assert( dec->getDNNFId() <= nNode_);
             }

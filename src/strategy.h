@@ -116,7 +116,7 @@ private:
         setVisited();
     }
     int getDNNFId(){ 
-        assert( visited() )
+        assert( visited() );
         assert( DNNFId >0 );
         return DNNFId;
     }

@@ -276,17 +276,20 @@ void Trace::writeStrategyToFile(ofstream &out)
 }
 void Trace::writeCertificate(ofstream& out, bool isUp)
 {
-    nNode_ = 0;  nEdge_ = 0;
     assert(source_->getRefCnt() == 0);
+
+    // reset trace info
+    nNode_ = 0;  nEdge_ = 0;
+    Node::resetGlobalVisited();
 
     // print the constants
     Node * zero = constants_[0];
     Node * one  = constants_[1];
-    zero->DNNFId = ++nNode_;
-    one-> DNNFId = ++nNode_;
+    zero->setDNNFId(++nNode_);
+    one-> setDNNFId(++nNode_);
     assert(nNode_ == 2);
-    out << "f " << zero->DNNFId<<" 0\n";
-    out << "t " << one->DNNFId<<" 0\n";
+    out << "f " << zero->getDNNFId()<<" 0\n";
+    out << "t " << one->getDNNFId()<<" 0\n";
 
     writeCertificateRecur(out, source_, isUp);
 }
@@ -307,8 +310,9 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         }
     }
     // Create decision node
-    node->DNNFId = ++nNode_;
-    out<<"o "<<node->DNNFId<<" 0\n";
+    assert( !node->visited() );
+    node->setDNNFId(++nNode_);
+    out<<"o "<<node->getDNNFId()<<" 0\n";
     for (; curr_branch < 2; ++curr_branch)
     {
         vector<int> &ei = node->existImp_[curr_branch];
@@ -317,16 +321,16 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         vector<Node *> &d = node->descendants_[curr_branch];
 
         if( curr_branch == 1 && node->hasEarlyReturn_ )
-            child[curr_branch] = (isUp ? constants_[1]->DNNFId : constants_[0]->DNNFId );
+            child[curr_branch] = (isUp ? constants_[1]->getDNNFId() : constants_[0]->getDNNFId() );
         else
         {
             assert(d.size());
             // create used decision nodes
             for (Node *dec : d)
             {
-                if (dec->DNNFId == -1)
+                if ( !node->visited() )
                     writeCertificateRecur(out, dec, isUp);
-                assert(dec->DNNFId <= int(nNode_));
+                assert( dec->getDNNFId() <= nNode_);
             }
             
             if (d.size() > 1)   // curr_node[curr_branch] is an AND-node
@@ -339,15 +343,15 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
                 nEdge_ += d.size();
 
                 for (Node *dec : d)
-                    out<< andID <<" "<< dec->DNNFId <<" 0\n";
+                    out<< andID <<" "<< dec->getDNNFId() <<" 0\n";
             }
             else   // Single decision node
-                child[curr_branch] = d[0]->DNNFId;
+                child[curr_branch] = d[0]->getDNNFId();
         }
 
         // print edge
         nEdge_++;
-        out<< node->DNNFId <<" "<< child[curr_branch] << " ";
+        out<< node->getDNNFId() <<" "<< child[curr_branch] << " ";
         out << ( curr_branch ? "" : "-" ) << node->decVar_;
         for (int l : ei)    out<<" "<<l;
         for (int l : ri)    out<<" "<<l;

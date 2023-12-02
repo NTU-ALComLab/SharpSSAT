@@ -109,6 +109,15 @@ public:
 private: 
     void increaseRefCnt(){ ++refCnt_; }
     void decreaseRefCnt(){ assert(refCnt_!=0); --refCnt_; }
+    void setDNNFId( int id ){ 
+        assert( !visited() );
+        DNNFId =  id;
+        setVisited();
+    }
+    int getDNNFId(){ 
+        assert( visited() && DNNFId >0);
+        return DNNFId;
+    }
 
     unsigned        refCnt_;        // number of in-coming edge
     vector<Node*>   descendants_[2];    

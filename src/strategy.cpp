@@ -350,8 +350,9 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
 
         // print edge
         nEdge_++;
-        out<< node->getDNNFId() <<" "<< child[curr_branch] << " ";
-        out << ( curr_branch ? "" : "-" ) << node->decVar_;
+        out<< node->getDNNFId() <<" "<< child[curr_branch];
+        if( node->decVar_ )
+            out << ( curr_branch ? " " : " -" ) << node->decVar_;
         for (int l : ei)    out<<" "<<l;
         for (int l : ri)    out<<" "<<l;
         if (!isUp ){ for (int l : pl) out<<" "<<l;  }    // only print pure literal for lower trace

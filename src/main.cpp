@@ -109,7 +109,9 @@ int main(int argc, char *argv[]) {
     cout << "upper trace written to " << upTrace_file << endl;
     string lowTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_low.nnf");
     cout << "lower trace written to " << lowTrace_file << endl;
-    theSolver.generateCertificate(upTrace_file, lowTrace_file);
+    string prob_file = regex_replace(input_file, regex("[.]sdimacs"), ".prob");
+    cout << "maximum satisfying probability written to " << prob_file << endl;
+    theSolver.generateCertificate(upTrace_file, lowTrace_file, prob_file);
   }
   return 0;
 }

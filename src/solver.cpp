@@ -1086,7 +1086,7 @@ void Solver::generateDNNF(const string& output_file){
   out.close();
 }
 
-void Solver::generateCertificate(const string& up, const string& low)
+void Solver::generateCertificate(const string& up, const string& low, const string & prob)
 {
   ofstream out(up);
   trace_->writeCertificate(out, true);
@@ -1094,6 +1094,10 @@ void Solver::generateCertificate(const string& up, const string& low)
 
   out.open(low);
   trace_->writeCertificate(out, false);
+  out.close();
+
+  out.open(prob);
+  out<<statistics_.final_solution_prob()<<"\n";
   out.close();
 }
 

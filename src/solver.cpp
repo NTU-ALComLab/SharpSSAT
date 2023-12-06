@@ -461,6 +461,7 @@ retStateT Solver::backtrack() {
         node->changeBranch();
         node->addDescendant(trace_->getConstant(0));
         node->setHasEarlyReturn();
+        node->setPrunedBranch( node->getCurrentBranch() );
     }																		
 
     // OTHERWISE:  backtrack further

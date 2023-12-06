@@ -26,7 +26,7 @@ class Trace;
 // descendants_[0] is v' and descendants_[1] is v.
 class Node{
 public:
-    Node(NodeType t=DUMMY): type_(t), refCnt_(0), decVar_(0), curBranch_(0), visited_(0){
+    Node(NodeType t=DUMMY): type_(t), refCnt_(0), decVar_(0), curBranch_(0), prunedBranch_(0), visited_(0){
         Node::nodeCnt_++;
     }
 
@@ -45,7 +45,8 @@ public:
         b_ = b; 
     }
     void changeBranch(){ curBranch_ = !curBranch_; }
-    bool getCurrentBranch(){ return curBranch_; };
+    bool getCurrentBranch(){ return curBranch_; }
+    bool getPrunedBranch() { return prunedBranch_; }
 
     // branch 0 for v', branch 1 for v
     void addDescendant(Node* d){ 
@@ -94,6 +95,7 @@ public:
         pureLits_[curBranch_].push_back(plit);
     }
     void setHasEarlyReturn(){ hasEarlyReturn_ = true; }
+    void setPrunedBranch(bool b) { prunedBranch_ = b; }
 
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
@@ -131,6 +133,7 @@ private:
     vector<int>     randomImp_[2];  // random implications 
     vector<int>     pureLits_[2];   // pure literals
     bool            hasEarlyReturn_ = false;
+    bool            prunedBranch_;
 
 
     // debug data member;

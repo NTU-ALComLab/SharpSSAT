@@ -319,7 +319,7 @@ void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
         vector<int> &pl = node->pureLits_[curr_branch];
         vector<Node *> &d = node->descendants_[curr_branch];
 
-        if( curr_branch == 1 && node->hasEarlyReturn_ )
+        if( node->hasEarlyReturn_ && curr_branch == node->prunedBranch_ )
             child[curr_branch] = (isUp ? constants_[1]->getDNNFId() : constants_[0]->getDNNFId() );
         else
         {

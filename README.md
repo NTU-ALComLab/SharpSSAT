@@ -44,6 +44,6 @@ then the witness (Skolem functions), written in a BLIF file, will be generated i
   ```
 
 ## Contact
-If you have any problems or suggestions, please create an issue or contact us at r11943096 @ ntu.edu.
+If you have any problems or suggestions, please create an issue or contact us at r11943096@ntu.edu.tw
 
 

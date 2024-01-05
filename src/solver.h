@@ -173,6 +173,15 @@ private:
     return true;
   }
 
+  void setPureLiterals()
+  {
+    Node* node = stack_.top().getNode();
+    const vector<int>& pureLits = node->getPureLiterals();
+    for(auto lit : pureLits )
+      assert( setLiteralIfFree( LiteralID(lit) ) );
+  }
+
+
   void printOnlineStats();
 
   void print(vector<LiteralID> &vec);

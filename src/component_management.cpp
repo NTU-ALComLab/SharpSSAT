@@ -297,7 +297,7 @@ void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
 			literal_pool_.push_back(*it_lit);
 			curr_clause_length++;
 			occs_[it_lit->var()].push_back(current_clause_ofs);
-			if(!it_lit->sign()) {
+			if(it_lit->sign()) { // laurenl fixed: sign()==1 means positive
 				pos_occs_[it_lit->var()].push_back(current_clause_ofs);
 			}
 			else{
@@ -316,13 +316,13 @@ void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
 	for (unsigned v = 1; v < occs_.size(); v++) {
 		variable_link_list_offsets_[v] = unified_variable_links_lists_pool_.size();
 		// positive occurence in binary clause
-		for (auto l : literals[LiteralID(v, false)].binary_links_)
+		for (auto l : literals[LiteralID(v, true)].binary_links_)	// laurenl fixed
 			if (l != SENTINEL_LIT) {
 				unified_variable_links_lists_pool_.push_back(l.toInt());
 			}
 		unified_variable_links_lists_pool_.push_back(0);
 		// negative occurence in binary clause
-		for (auto l : literals[LiteralID(v, true)].binary_links_)
+		for (auto l : literals[LiteralID(v, false)].binary_links_)	// laurenl fixed
 			if (l != SENTINEL_LIT) {
 				unified_variable_links_lists_pool_.push_back(l.toInt());
 			}

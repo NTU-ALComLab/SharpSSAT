@@ -94,6 +94,10 @@ public:
     void addPureLiteral(int plit){
         pureLits_[curBranch_].push_back(plit);
     }
+    vector<int>& getPureLiterals(){
+        return  pureLits_[curBranch_];
+    }
+
     void setHasEarlyReturn(){ hasEarlyReturn_ = true; }
     void setPrunedBranch(bool b) { prunedBranch_ = b; }
 

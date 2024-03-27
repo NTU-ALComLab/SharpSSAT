@@ -571,11 +571,13 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 		if (config_.perform_pure_literal && var2Q_[*vt]==EXISTENTIAL){
 			if ( neg_var_seen_[*vt]==0 && pos_var_seen_[*vt] ){
 				pureEliminate(*vt, pos_start_ofs);
-				top.getNode()->addExistImplication( (*vt) );
+				if (config_.strategy_generation)
+					top.getNode()->addExistImplication( (*vt) );
 			}
 			else if( pos_var_seen_[*vt]==0 && neg_var_seen_[*vt] ){
 				pureEliminate(*vt, neg_start_ofs);
-				top.getNode()->addExistImplication( -(*vt) );
+				if (config_.strategy_generation)
+					top.getNode()->addExistImplication( -(*vt) );
 			}
 		}
 

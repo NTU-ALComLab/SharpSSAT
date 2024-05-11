@@ -64,6 +64,8 @@ public:
 
   void solve(const string & file_name);
   void generateStrategy(const string & file_name);
+  void generateDNNF(const string & file_name);
+  void generateCertificate(const string & up, const string & low, const string & prob);
 
   SolverConfiguration &config() {
     return config_;
@@ -71,6 +73,9 @@ public:
 
   void setTimeBound(long int i) {
     stopwatch_.setTimeBound(i);
+  }
+  void setDNNFName(const string& s) {
+    DNNF_filename_ = s;
   }
 
 private:
@@ -92,8 +97,10 @@ private:
   unsigned long last_ccl_cleanup_time_ = 0;
 
   Trace*        trace_;
-  ofstream      out_file_; // output strategy file
-  vector<int>   exist_imp_;
+  ofstream      out_file_;      // output strategy file
+  vector<int>   exist_imp_;     // temp vec holding exist implication literals
+  vector<int>   random_imp_;    // temp vec holding random implication literals
+  string        DNNF_filename_; // output dec-DNNF filname
 
   bool simplePreProcess();
   bool prepFailedLiteralTest();
@@ -165,6 +172,18 @@ private:
     literal_values_[lit.neg()] = F_TRI;
     return true;
   }
+  bool repeatedPureLiteral(LiteralID lit){
+    return var(lit).decision_level == stack_.get_decision_level() && var(lit).ante.asCl() == NOT_A_CLAUSE && literal_values_[lit] == T_TRI && literal_values_[lit.neg()] == F_TRI;
+  }
+
+  void setPureLiterals()
+  {
+    Node* node = stack_.top().getNode();
+    const vector<int>& pureLits = node->getPureLiterals();
+    for(auto lit : pureLits )
+      assert (setLiteralIfFree( LiteralID(lit) ) || repeatedPureLiteral( LiteralID(lit)) );
+  }
+
 
   void printOnlineStats();
 
@@ -212,9 +231,11 @@ private:
   // will be called only after preprocessing
   void initTrace(){
     Node* n = new Node(DUMMY);
+    Node* zero = new Node(DUMMY);
+    Node* one = new Node(DUMMY);
     stack_.back().setNode(n);
     n->changeBranch();
-    trace_ = new Trace(n); // n is the single source
+    trace_ = new Trace(n, zero, one); // n is the single source
   }
 
   const LiteralID &TOS_decLit() {

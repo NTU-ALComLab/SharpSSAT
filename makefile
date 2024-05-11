@@ -33,18 +33,11 @@ solver.d
 %.o: ./src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -DEBUG -O3 -std=c++11 -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -O3 -std=c++11 -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
 LIBS := -lgmpxx -lgmp
-
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(strip $(CPP_DEPS)),)
--include $(CPP_DEPS)
-endif
-endif
 
 # All Target
 all: SharpSSAT
@@ -63,3 +56,9 @@ clean:
 	-@echo ' '
 
 .PHONY: all clean dependents
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(strip $(CPP_DEPS)),)
+-include $(CPP_DEPS)
+endif
+endif

@@ -98,6 +98,8 @@ struct SolverConfiguration {
   bool perform_pure_literal = false;
   bool perform_pure_component = false;
   bool strategy_generation = false;
+  bool compile_DNNF = false;
+  bool certificate_generation = false;
   bool vsads_freq = true;
   bool vsads_act = true;
 

@@ -31,6 +31,16 @@ $ SharpSSAT -s -k [SDIMACS_File]`
 ```
 then the witness (Skolem functions), written in a BLIF file, will be generated in the same directory as the SDIMACS_File.
 
+To enable dec-DNNF generation, run the command:
+```
+$ SharpSSAT -s -d [SDIMACS_File]`
+```
+
+To enable certificate generation, run the command:
+```
+$ SharpSSAT -s -l -p [SDIMACS_File]`
+```
+
 ## Reference
 * [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):
   ```
@@ -42,8 +52,6 @@ then the witness (Skolem functions), written in a BLIF file, will be generated i
       year       = {2023}
    }
   ```
-
+  
 ## Contact
 If you have any problems or suggestions, please create an issue or contact us at r11943096@ntu.edu.tw
-
-

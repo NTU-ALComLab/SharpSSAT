@@ -270,8 +270,9 @@ SOLVER_StateT Solver::countSSAT() {
     //NOTE assertion failed
     //assert(state_.name != STATE_ASSERTION_PENDING);
     while (component_analyzer_.findNextRemainingComponentOf(stack_.top())) {
-      setPureLiterals();
-      ssatDecideLiteral();	// laurenl: increase stack level and create a new decision node set to the decided literal
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
+        setPureLiteralsOnTrace();
+      ssatDecideLiteral();
       if (stopwatch_.timeBoundBroken())
         return TIMEOUT;
       if (stopwatch_.interval_tick())

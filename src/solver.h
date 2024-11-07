@@ -176,7 +176,7 @@ private:
     return var(lit).decision_level == stack_.get_decision_level() && var(lit).ante.asCl() == NOT_A_CLAUSE && literal_values_[lit] == T_TRI && literal_values_[lit.neg()] == F_TRI;
   }
 
-  void setPureLiterals()
+  void setPureLiteralsOnTrace()
   {
     Node* node = stack_.top().getNode();
     const vector<int>& pureLits = node->getPureLiterals();

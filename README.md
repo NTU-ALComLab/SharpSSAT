@@ -50,20 +50,19 @@ $ SharpSSAT -s -l -p [SDIMACS_File]`
 
 * [IJCAI'24 paper](https://doi.org/10.24963/ijcai.2024/206):
   ```
- @inproceedings{cheng_knowledge_2024,
-  title     = {Knowledge Compilation for Incremental and Checkable Stochastic Boolean Satisfiability},
-  author    = {Cheng, Che and Luo, Yun-Rong and Jiang, Jie-Hong R.},
-  booktitle = {Proceedings of the Thirty-Third International Joint Conference on
-               Artificial Intelligence, {IJCAI-24}},
-  publisher = {International Joint Conferences on Artificial Intelligence Organization},
-  editor    = {Kate Larson},
-  pages     = {1862--1872},
-  year      = {2024},
-  month     = {8},
-  note      = {Main Track},
-  doi       = {10.24963/ijcai.2024/206},
-  url       = {https://doi.org/10.24963/ijcai.2024/206},
-}
+  @inproceedings{cheng_knowledge_2024,
+    title     = {Knowledge Compilation for Incremental and Checkable Stochastic Boolean Satisfiability},
+    author    = {Cheng, Che and Luo, Yun-Rong and Jiang, Jie-Hong R.},
+    booktitle = {Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence, {IJCAI-24}},
+    publisher = {International Joint Conferences on Artificial Intelligence Organization},
+    editor    = {Kate Larson},
+    pages     = {1862--1872},
+    year      = {2024},
+    month     = {8},
+    note      = {Main Track},
+    doi       = {10.24963/ijcai.2024/206},
+    url       = {https://doi.org/10.24963/ijcai.2024/206},
+  }
   ```
   
 ## Contact

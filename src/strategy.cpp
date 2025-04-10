@@ -62,7 +62,6 @@ void Node::removeSmallBranch()
         removeAllDescendants(!b_);
         for (size_t i = 0; i < descendants_[b_].size(); ++i)
         {
-            Node *d = descendants_[b_][i];
             descendants_[b_][i]->removeSmallBranch();
         }
     }
@@ -213,7 +212,7 @@ void Trace::writeStrategyToFile(ofstream &out)
                 updateExist(n->decVar_, wire, out);
 
             // update descendants
-            for (int i = 0; i < d.size(); ++i)
+            for (size_t i = 0; i < d.size(); ++i)
             {
                 assert(d[i]);
                 if (info_map.find(d[i]) == info_map.end())
@@ -256,7 +255,7 @@ void Trace::writeStrategyToFile(ofstream &out)
             for (size_t k = 0; k < 2; ++k)
             {
                 vector<Node *> &d = n->descendants_[k];
-                for (int i = 0; i < d.size(); ++i)
+                for (size_t i = 0; i < d.size(); ++i)
                 {
                     assert(d[i]);
                     if (info_map.find(d[i]) == info_map.end())
@@ -450,7 +449,7 @@ void Trace::writeDNNFRecur(Node *n)
             ++nNode_;
             size_t n = ei.size() + ri.size() + d.size();
             nEdge_ += n;
-            int cnt = 0;
+            size_t cnt = 0;
             ss << "A " << n << ' ';
             for (int l : ei)
             {

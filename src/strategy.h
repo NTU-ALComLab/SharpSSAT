@@ -26,7 +26,7 @@ class Trace;
 // descendants_[0] is v' and descendants_[1] is v.
 class Node{
 public:
-    Node(NodeType t=DUMMY): type_(t), refCnt_(0), decVar_(0), curBranch_(0), prunedBranch_(0), visited_(0){
+    Node(NodeType t=DUMMY): refCnt_(0), type_(t), decVar_(0), curBranch_(0), prunedBranch_(0), visited_(0){
         Node::nodeCnt_++;
     }
 
@@ -94,8 +94,9 @@ public:
     void addPureLiteral(int plit){
         pureLits_[curBranch_].push_back(plit);
     }
+
     vector<int>& getPureLiterals(){
-        return  pureLits_[curBranch_];
+        return pureLits_[curBranch_];
     }
 
     void setHasEarlyReturn(){ hasEarlyReturn_ = true; }
@@ -121,7 +122,7 @@ private:
         DNNFId =  id;
         setVisited();
     }
-    int getDNNFId(){ 
+    unsigned int getDNNFId(){ 
         assert( visited() );
         assert( DNNFId >0 );
         return DNNFId;

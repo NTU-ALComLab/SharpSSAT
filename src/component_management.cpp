@@ -571,19 +571,19 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 		if (config_.perform_pure_literal && var2Q_[*vt]==EXISTENTIAL){
 			if ( neg_var_seen_[*vt]==0 && pos_var_seen_[*vt] ){
 				pureEliminate(*vt, pos_start_ofs);
-                if(config_.strategy_generation || config_.compile_DNNF){
+					if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( (*vt) );
-                }
-                if(config_.certificate_generation)
+					}
+					if(config_.certificate_generation)
 				    top.getNode()->addPureLiteral( (*vt) );
 			}
 			else if( pos_var_seen_[*vt]==0 && neg_var_seen_[*vt] ){
 				pureEliminate(*vt, neg_start_ofs);
-                if(config_.strategy_generation || config_.compile_DNNF){
+					if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( -(*vt) );
-                }
-                if(config_.certificate_generation)
-                    top.getNode()->addPureLiteral( -(*vt) );
+					}
+					if(config_.certificate_generation)
+						top.getNode()->addPureLiteral( -(*vt) );
 			}
 		}
 
@@ -632,7 +632,7 @@ void ComponentAnalyzer::pureEliminate(VariableIndex var, vector<ClauseOfs>& occu
 	// 1. set var NIL
 	assert(var2Q_[var]==EXISTENTIAL);
 	variables_seen_[var] = CA_NIL;
-	for(int i=0; i<occur.size(); ++i)
+	for(size_t i=0; i<occur.size(); ++i)
 		clauses_seen_[occur[i]] = CA_NIL;
 }
 

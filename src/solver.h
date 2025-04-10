@@ -149,7 +149,7 @@ private:
   float scoreOf(VariableIndex v) {
     float score = 0;
     if (config_.vsads_freq){
-      float score = component_analyzer_.scoreOf(v);
+      score = component_analyzer_.scoreOf(v);
     }
     if (config_.vsads_act){
       score += 10.0*literal(LiteralID(v, true)).activity_score_;
@@ -180,7 +180,7 @@ private:
   {
     Node* node = stack_.top().getNode();
     const vector<int>& pureLits = node->getPureLiterals();
-    for(auto lit : pureLits )
+    for (auto lit : pureLits)
       assert (setLiteralIfFree( LiteralID(lit) ) || repeatedPureLiteral( LiteralID(lit)) );
   }
 

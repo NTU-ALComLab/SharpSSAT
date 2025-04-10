@@ -159,7 +159,7 @@ public:
 
   void print(){
     cout << "Var={";
-    int i=0;
+    unsigned int i=0;
     for(; i<num_variables(); ++i ){
       cout << data_[i];
       if (i!=num_variables()-1) cout << ',';
@@ -900,7 +900,7 @@ public:
   void set_father(CacheEntryID f) {
     father_ = f;
   }
-  const CacheEntryID father() const {
+  CacheEntryID father() const {
     return father_;
   }
 

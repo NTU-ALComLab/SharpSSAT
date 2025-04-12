@@ -134,11 +134,11 @@ void Solver::HardWireAndCompact() {
   original_lit_pool_size_ = literal_pool_.size();
 }
 
-void Solver::solve(const string &file_name) {
+bool Solver::solve(const string &file_name) {
   stopwatch_.start();
   statistics_.input_file_ = file_name;
 
-  createfromFile(file_name);
+  if (!createfromFile(file_name)) return false;
   initStack(num_variables());
   if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
     initTrace();
@@ -222,6 +222,8 @@ void Solver::solve(const string &file_name) {
   statistics_.writeToFile("data.out");
   if(!SolverConfiguration::quiet)
     statistics_.printShort();
+
+  return true;
 }
 
 SOLVER_StateT Solver::countSAT() {

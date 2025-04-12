@@ -62,7 +62,7 @@ public:
     stopwatch_.setTimeBound(config_.time_bound_seconds);
   }
 
-  void solve(const string & file_name);
+  bool solve(const string & file_name);
   void generateStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
   void generateCertificate(const string & up, const string & low, const string & prob);

@@ -390,12 +390,14 @@ bool Solver::ssatDecideLiteral() {
     decayActivities();
 
   //ssat NOTE
-  Node* n  = new Node();
   stack_.top().setIsDecRandom( qType(theLit)==RANDOM );
   stack_.top().setDecProb( prob(theLit) );
   stack_.top().setIsInv( theLit.sign() );
-  n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
-  stack_.top().setNode(n);
+  if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation) {
+    Node* n  = new Node();
+    n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
+    stack_.top().setNode(n);
+  }
   // cout << "Decide " << theLit.toInt() << endl;
 
   return true;
@@ -453,8 +455,9 @@ retStateT Solver::backtrack() {
           // cout << "Mark Max Branch " << stack_.top().maxProbBranch() << endl;
           n->markMaxBranch(stack_.top().maxProbBranch());
         }
+        component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, stack_.top().getNode());
       }
-      component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, stack_.top().getNode());
+      else component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, nullptr);
     }
     else{
       component_analyzer_.cacheModelCountOf(stack_.top().super_component(),
@@ -530,7 +533,8 @@ retStateT Solver::resolveConflict() {
       stack_.top().remaining_components_ofs() == component_analyzer_.component_stack_size());
 
   stack_.top().changeBranch();
-  (stack_.top().getNode())->changeBranch();
+  if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
+    stack_.top().getNode()->changeBranch();
   LiteralID lit = TOS_decLit();
   reactivateTOS();
   setLiteralIfFree(lit.neg(), ant);

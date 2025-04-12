@@ -161,11 +161,12 @@ class Trace{
 public:
     Trace(Node* s, Node* zero, Node* one): source_(s),constants_{zero,one}{ constants_[0]->increaseRefCnt(); constants_[1]->increaseRefCnt();};
 
-    Trace(): source_(NULL) {};
+    Trace(): source_(nullptr) {};
 
     ~Trace(){
         if(source_){
             source_->removeAllDescendants(1);
+            delete source_;
         }
         if(constants_[0]){
             delete constants_[0];

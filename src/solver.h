@@ -62,6 +62,10 @@ public:
     stopwatch_.setTimeBound(config_.time_bound_seconds);
   }
 
+  ~Solver() {
+    delete trace_;
+  }
+
   bool solve(const string & file_name);
   void generateStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
@@ -96,7 +100,7 @@ private:
   // the last time the conflict clause storage has been compacted
   unsigned long last_ccl_cleanup_time_ = 0;
 
-  Trace*        trace_;
+  Trace*        trace_ = nullptr;
   ofstream      out_file_;      // output strategy file
   vector<int>   exist_imp_;     // temp vec holding exist implication literals
   vector<int>   random_imp_;    // temp vec holding random implication literals
@@ -230,6 +234,7 @@ private:
 
   // will be called only after preprocessing
   void initTrace(){
+    delete trace_;
     Node* n = new Node(DUMMY);
     Node* zero = new Node(DUMMY);
     Node* one = new Node(DUMMY);

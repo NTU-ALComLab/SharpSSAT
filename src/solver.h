@@ -62,7 +62,11 @@ public:
     stopwatch_.setTimeBound(config_.time_bound_seconds);
   }
 
-  void solve(const string & file_name);
+  ~Solver() {
+    delete trace_;
+  }
+
+  bool solve(const string & file_name);
   void generateStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
   void generateCertificate(const string & up, const string & low, const string & prob);
@@ -96,7 +100,7 @@ private:
   // the last time the conflict clause storage has been compacted
   unsigned long last_ccl_cleanup_time_ = 0;
 
-  Trace*        trace_;
+  Trace*        trace_ = nullptr;
   ofstream      out_file_;      // output strategy file
   vector<int>   exist_imp_;     // temp vec holding exist implication literals
   vector<int>   random_imp_;    // temp vec holding random implication literals
@@ -149,7 +153,7 @@ private:
   float scoreOf(VariableIndex v) {
     float score = 0;
     if (config_.vsads_freq){
-      float score = component_analyzer_.scoreOf(v);
+      score = component_analyzer_.scoreOf(v);
     }
     if (config_.vsads_act){
       score += 10.0*literal(LiteralID(v, true)).activity_score_;
@@ -176,11 +180,11 @@ private:
     return var(lit).decision_level == stack_.get_decision_level() && var(lit).ante.asCl() == NOT_A_CLAUSE && literal_values_[lit] == T_TRI && literal_values_[lit.neg()] == F_TRI;
   }
 
-  void setPureLiterals()
+  void setPureLiteralsOnTrace()
   {
     Node* node = stack_.top().getNode();
     const vector<int>& pureLits = node->getPureLiterals();
-    for(auto lit : pureLits )
+    for (auto lit : pureLits)
       assert (setLiteralIfFree( LiteralID(lit) ) || repeatedPureLiteral( LiteralID(lit)) );
   }
 
@@ -230,6 +234,7 @@ private:
 
   // will be called only after preprocessing
   void initTrace(){
+    delete trace_;
     Node* n = new Node(DUMMY);
     Node* zero = new Node(DUMMY);
     Node* one = new Node(DUMMY);

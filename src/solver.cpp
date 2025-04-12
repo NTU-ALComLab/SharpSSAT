@@ -129,18 +129,16 @@ void Solver::HardWireAndCompact() {
   statistics_.num_original_unit_clauses_ = statistics_.num_unit_clauses_ =
       unit_clauses_.size();
   initStack(num_variables());
-
   if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
     initTrace();
-
   original_lit_pool_size_ = literal_pool_.size();
 }
 
-void Solver::solve(const string &file_name) {
+bool Solver::solve(const string &file_name) {
   stopwatch_.start();
   statistics_.input_file_ = file_name;
 
-  createfromFile(file_name);
+  if (!createfromFile(file_name)) return false;
   initStack(num_variables());
   if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
     initTrace();
@@ -163,7 +161,7 @@ void Solver::solve(const string &file_name) {
 		  statistics_.exit_state_ = SUCCESS;
 		  statistics_.set_final_solution_count(1.0);
           if(config_.compile_DNNF || config_.certificate_generation){
-            stack_.top().getNode()->addDescendant(trace_->getConstant(1)); // laurenl: SSAT formula is const TRUE
+            stack_.top().getNode()->addDescendant(trace_->getConstant(1));
           }
   }else{
 
@@ -177,7 +175,7 @@ void Solver::solve(const string &file_name) {
     component_analyzer_.initialize(literals_, literal_pool_, var2Q_);
 
 
-    statistics_.exit_state_ = config_.ssat_solving ? countSSAT() : countSAT();	// laurenl: non-trivial SSAT solving
+    statistics_.exit_state_ = config_.ssat_solving ? countSSAT() : countSAT();
 
     if(config_.ssat_solving){
       statistics_.set_final_solution_prob(assert_prob_*stack_.top().getTotalSatProb());
@@ -195,7 +193,7 @@ void Solver::solve(const string &file_name) {
     cout << endl << " FOUND UNSAT DURING PREPROCESSING " << endl;
 
     if(config_.compile_DNNF || config_.certificate_generation){
-        stack_.top().getNode()->addDescendant(trace_->getConstant(0)); // laurenl: SSAT formula is constant FALSE 
+        stack_.top().getNode()->addDescendant(trace_->getConstant(0));
     }
   }
   cout << "End of Solving" << endl;
@@ -205,7 +203,7 @@ void Solver::solve(const string &file_name) {
     statistics_.set_num_nodes(trace_->numNodes());
     statistics_.set_num_edges(trace_->numEdges());
   }
-  else if(config_.compile_DNNF){						 
+  else if(config_.compile_DNNF){
     cout << "Start Generating DNNF..." << endl;
     Node::resetGlobalVisited();
     statistics_.set_num_nodes(trace_->numNodes());
@@ -224,6 +222,8 @@ void Solver::solve(const string &file_name) {
   statistics_.writeToFile("data.out");
   if(!SolverConfiguration::quiet)
     statistics_.printShort();
+
+  return true;
 }
 
 SOLVER_StateT Solver::countSAT() {
@@ -239,7 +239,7 @@ SOLVER_StateT Solver::countSAT() {
       if (stopwatch_.interval_tick())
         printOnlineStats();
 
-      while (!bcp()) {				
+      while (!bcp()) {
         res = resolveConflict();
         if (res == BACKTRACK)
           break;
@@ -272,22 +272,16 @@ SOLVER_StateT Solver::countSSAT() {
     //NOTE assertion failed
     //assert(state_.name != STATE_ASSERTION_PENDING);
     while (component_analyzer_.findNextRemainingComponentOf(stack_.top())) {
-      setPureLiterals();
-      ssatDecideLiteral();	// laurenl: increase stack level and create a new decision node set to the decided literal
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
+        setPureLiteralsOnTrace();
+      ssatDecideLiteral();
       if (stopwatch_.timeBoundBroken())
         return TIMEOUT;
       if (stopwatch_.interval_tick())
         printOnlineStats();
 
-      while (!bcp()) {	/* laurenl: Part A
-									bcp() add a descendant of const FALSE and returns 0 if detect conflict
-									record exist/random implications on node and return 1 otherwise */
-
-        res = resolveConflict(); /* laurenl: Part B
-											 resolveConflict() change branch and return RESOLVED for first branch
-											 return BACKTRACK otherwise
-											 first  branch conflict -> bcp()=0 -> B: change branch & res = RESOLVED -> go back to A and bcp() on second branch
-											 second branch conflict -> bcp()=0 -> B: res=BACKTRACK -> go to C */
+      while (!bcp()) {
+        res = resolveConflict();
         if (res == BACKTRACK)
           break;
       }
@@ -295,18 +289,14 @@ SOLVER_StateT Solver::countSSAT() {
         break;
       assert(state_.name != STATE_ASSERTION_PENDING);
     }
-
-	/* laurenl: first branch 0 second branch 0 : A(bcp=0) -> B(res=RESOLVED) -> A(bcp=0) -> B(res=BACKTRACK) -> C
-				first branch 0 second branch 1 : A(bcp=0) -> B(res=RESOLVED) -> A(bcp=1) -> B(res=RESOLVED) ->  continue branching on second branch
-	*/
-
     if(config_.compile_DNNF || config_.certificate_generation){
         Node* node = stack_.top().getNode();
-        if(node->empty(config_.certificate_generation))
+        if(node->empty(config_.certificate_generation)){
             node->addDescendant(trace_->getConstant(1));
+        }
     }
 
-    res = backtrack();		/* laurenl: Part C*/
+    res = backtrack();
     if (res == EXIT)
       return SUCCESS;
     while (res != PROCESS_COMPONENT && !bcp()) {
@@ -360,7 +350,7 @@ bool Solver::ssatDecideLiteral() {
   // cout << "New Stack " << stack_.size() << ", Comp " << stack_.top().currentRemainingComponent() << endl;
   stack_.push_back(
       StackLevel(stack_.top().currentRemainingComponent(),
-          literal_stack_.size(), component_analyzer_.component_stack_size()));	// laurenl: increase stack level
+          literal_stack_.size(), component_analyzer_.component_stack_size()));
 
 
   float max_score = -1;
@@ -400,12 +390,14 @@ bool Solver::ssatDecideLiteral() {
     decayActivities();
 
   //ssat NOTE
-  Node* n  = new Node();												// laurenl: node of trace
   stack_.top().setIsDecRandom( qType(theLit)==RANDOM );
   stack_.top().setDecProb( prob(theLit) );
   stack_.top().setIsInv( theLit.sign() );
-  n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());		// laurenl: node n set to its decision
-  stack_.top().setNode(n);
+  if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation) {
+    Node* n  = new Node();
+    n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
+    stack_.top().setNode(n);
+  }
   // cout << "Decide " << theLit.toInt() << endl;
 
   return true;
@@ -429,14 +421,12 @@ retStateT Solver::backtrack() {
     else if (stack_.top().anotherCompProcessible())
       return PROCESS_COMPONENT;
 
-
     // Force explore both branch if compile_DNNF is true and pure literal is not enabled
-    if ( !stack_.top().isSecondBranch() 
-         && (stack_.top().needSecondBranch() || (config_.compile_DNNF  && !config_.perform_pure_literal))) {
+    if ( !stack_.top().isSecondBranch() && (stack_.top().needSecondBranch() || (config_.compile_DNNF && !config_.perform_pure_literal)) ) {
       LiteralID aLit = TOS_decLit();
       assert(stack_.get_decision_level() > 0);
       stack_.top().changeBranch();
-      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){ 
+      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         assert(stack_.top().getNode());
         stack_.top().getNode()->changeBranch();
       }
@@ -444,40 +434,30 @@ retStateT Solver::backtrack() {
       setLiteralIfFree(aLit.neg(), NOT_A_CLAUSE);
       setState(STATE_ASSERTION_PENDING);
       return RESOLVED;
-    }                                                                       
-    /* laurenl: Reaching condition
-                case1:  stack_.top().isSecondBranch() => on second branch => should either backtrack or change component 
-                case2:  !stack_.top().isSecondBranch() && !stack_.top().needSecondBranch() && !config_.compile_DNNF && !config_.certificate_generation
-                        => on first branch, first_branch_prob = 1 => no need to update second branch for DNNF 
-                                                                     still need to update second branch for certificate
-                case3:  !stack_.top().isSecondBranch() && !stack_.top().needSecondBranch() 
-                        && config_.compile_DNNF  && config_.perform_literal
-                        => on first branch, first_branch_prob = 1 => should set the second branch of DNNFe
-     */
-
-    if (!stack_.top().isSecondBranch() && (config_.compile_DNNF || config_.certificate_generation)) 
-    {   // laurenl: case2 or case3
-        // assert(false);                                                   
-        Node* node = stack_.top().getNode();                                
+    }
+    // // Exist early termination: mark second branch as constant zero
+    if (!stack_.top().isSecondBranch() && (config_.compile_DNNF || config_.certificate_generation)) {
+        // assert(false);
+        Node* node = stack_.top().getNode();
         node->changeBranch();
         node->addDescendant(trace_->getConstant(0));
         node->setHasEarlyReturn();
         node->setPrunedBranch( node->getCurrentBranch() );
-    }																		
-
+    }
     // OTHERWISE:  backtrack further
     // NOTE for ssat
     if(config_.ssat_solving){
-      double p = stack_.top().getTotalSatProb();	
+      double p = stack_.top().getTotalSatProb();
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         Node* n = stack_.top().getNode();
         assert(n);
         if(n->isExist()) {
           // cout << "Mark Max Branch " << stack_.top().maxProbBranch() << endl;
-          n->markMaxBranch(stack_.top().maxProbBranch());					
+          n->markMaxBranch(stack_.top().maxProbBranch());
         }
+        component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, stack_.top().getNode());
       }
-      component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, stack_.top().getNode());	// laurenl: cache the result
+      else component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, nullptr);
     }
     else{
       component_analyzer_.cacheModelCountOf(stack_.top().super_component(),
@@ -492,20 +472,20 @@ retStateT Solver::backtrack() {
     assert(stack_.size()>=2);
     // NOTE for ssat
     if(config_.ssat_solving){
-      (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());         // laurenl: calculate parent probability
+      (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         assert((stack_.end()-2)->getNode());
         assert(stack_.top().getNode());
-        ((stack_.end()-2)->getNode())->addDescendant(stack_.top().getNode());	// laurenl: connect parent node with child node
+        ((stack_.end()-2)->getNode())->addDescendant(stack_.top().getNode());
       }
     }
     else
       (stack_.end() - 2)->includeSolution(stack_.top().getTotalModelCount());
-    stack_.pop_back();                                                          // laurenl: bracktracked here 
+    stack_.pop_back();
 
     // step to the next component not yet processed
     if(config_.ssat_solving && config_.perform_thresholding){
-      if( !stack_.top().needSecondBranch() && stack_.top().isSecondBranch()){   
+      if( !stack_.top().needSecondBranch() && stack_.top().isSecondBranch()){
         if (stack_.get_decision_level() <= 0) break;
         reactivateTOS();
         (stack_.end()-2)->includeSatProb(stack_.top().getTotalSatProb());
@@ -514,7 +494,7 @@ retStateT Solver::backtrack() {
       stack_.top().nextUnprocessedComponent();
     }
     else
-      stack_.top().nextUnprocessedComponent();                                                                    
+      stack_.top().nextUnprocessedComponent();
 
     assert(
         stack_.top().remaining_components_ofs() < component_analyzer_.component_stack_size()+1);
@@ -553,7 +533,8 @@ retStateT Solver::resolveConflict() {
       stack_.top().remaining_components_ofs() == component_analyzer_.component_stack_size());
 
   stack_.top().changeBranch();
-  (stack_.top().getNode())->changeBranch();
+  if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation)
+    stack_.top().getNode()->changeBranch();
   LiteralID lit = TOS_decLit();
   reactivateTOS();
   setLiteralIfFree(lit.neg(), ant);
@@ -623,16 +604,17 @@ bool Solver::bcp() {
     }
   }
 
-  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){				
+  if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
     if(bSucceeded){
-      Node* n = stack_.top().getNode();									// laurenl: bcp literals recorded
-      n->recordExistImplications(exist_imp_);							
+      Node* n = stack_.top().getNode();
+      n->recordExistImplications(exist_imp_);
       n->recordRandomImplications(random_imp_);
     }
     else{
-        stack_.top().getNode()->addDescendant(trace_->getConstant(0));	// laurenl: encounter conflict, set the branch to FALSE
+        stack_.top().getNode()->addDescendant(trace_->getConstant(0));
     }
   }
+
   return bSucceeded;
 }
 
@@ -882,7 +864,7 @@ void Solver::recordLastUIPCauses() {
       LiteralID alit = getAntecedent(curr_lit).asLit();
       literal(alit).increaseActivity();
       literal(curr_lit).increaseActivity();
-      if (!seen[alit.var()] && !var(alit).decision_level == 0
+      if (!seen[alit.var()] && var(alit).decision_level != 0
           && !existsUnitClauseOf(alit.var())) {
         if (var(alit).decision_level < DL)
           tmp_clause.push_back(alit);
@@ -974,7 +956,7 @@ void Solver::recordAllUIPCauses() {
       LiteralID alit = getAntecedent(curr_lit).asLit();
       literal(alit).increaseActivity();
       literal(curr_lit).increaseActivity();
-      if (!seen[alit.var()] && !var(alit).decision_level == 0
+      if (!seen[alit.var()] && var(alit).decision_level != 0
           && !existsUnitClauseOf(alit.var())) {
         if (var(alit).decision_level < DL)
           tmp_clause.push_back(alit);

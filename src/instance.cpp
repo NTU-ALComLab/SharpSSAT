@@ -287,7 +287,7 @@ bool Instance::createfromFile(const string &file_name) {
   ifstream input_file(file_name);
   if (!input_file) {
     cerr << "Cannot open file: " << file_name << endl;
-    exit(0);
+    return false;
   }
 
   struct stat filestatus;
@@ -299,7 +299,7 @@ bool Instance::createfromFile(const string &file_name) {
   if (!(input_file >> idstring && (idstring == "cnf" || idstring=="wcnf") && input_file >> nVars
       && input_file >> nCls)) {
     cerr << "Invalid CNF(WCNF) file" << endl;
-    exit(0);
+    return false;
   }
   if(idstring=="wcnf") f_type_ = WCNF;
 

@@ -297,7 +297,7 @@ void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
 			literal_pool_.push_back(*it_lit);
 			curr_clause_length++;
 			occs_[it_lit->var()].push_back(current_clause_ofs);
-			if(it_lit->sign()) { // laurenl fixed: sign()==1 means positive
+			if(it_lit->sign()) { 
 				pos_occs_[it_lit->var()].push_back(current_clause_ofs);
 			}
 			else{
@@ -316,13 +316,13 @@ void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
 	for (unsigned v = 1; v < occs_.size(); v++) {
 		variable_link_list_offsets_[v] = unified_variable_links_lists_pool_.size();
 		// positive occurence in binary clause
-		for (auto l : literals[LiteralID(v, true)].binary_links_)	// laurenl fixed
+		for (auto l : literals[LiteralID(v, true)].binary_links_)
 			if (l != SENTINEL_LIT) {
 				unified_variable_links_lists_pool_.push_back(l.toInt());
 			}
 		unified_variable_links_lists_pool_.push_back(0);
 		// negative occurence in binary clause
-		for (auto l : literals[LiteralID(v, false)].binary_links_)	// laurenl fixed
+		for (auto l : literals[LiteralID(v, false)].binary_links_)
 			if (l != SENTINEL_LIT) {
 				unified_variable_links_lists_pool_.push_back(l.toInt());
 			}
@@ -571,19 +571,19 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 		if (config_.perform_pure_literal && var2Q_[*vt]==EXISTENTIAL){
 			if ( neg_var_seen_[*vt]==0 && pos_var_seen_[*vt] ){
 				pureEliminate(*vt, pos_start_ofs);
-                if(config_.strategy_generation || config_.compile_DNNF){
+					if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( (*vt) );
-                }
-                if(config_.certificate_generation)
+					}
+					if(config_.certificate_generation)
 				    top.getNode()->addPureLiteral( (*vt) );
 			}
 			else if( pos_var_seen_[*vt]==0 && neg_var_seen_[*vt] ){
 				pureEliminate(*vt, neg_start_ofs);
-                if(config_.strategy_generation || config_.compile_DNNF){
+					if(config_.strategy_generation || config_.compile_DNNF){
 				    top.getNode()->addExistImplication( -(*vt) );
-                }
-                if(config_.certificate_generation)
-                    top.getNode()->addPureLiteral( -(*vt) );
+					}
+					if(config_.certificate_generation)
+						top.getNode()->addPureLiteral( -(*vt) );
 			}
 		}
 
@@ -632,7 +632,7 @@ void ComponentAnalyzer::pureEliminate(VariableIndex var, vector<ClauseOfs>& occu
 	// 1. set var NIL
 	assert(var2Q_[var]==EXISTENTIAL);
 	variables_seen_[var] = CA_NIL;
-	for(int i=0; i<occur.size(); ++i)
+	for(size_t i=0; i<occur.size(); ++i)
 		clauses_seen_[occur[i]] = CA_NIL;
 }
 

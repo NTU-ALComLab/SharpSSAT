@@ -62,7 +62,6 @@ void Node::removeSmallBranch()
         removeAllDescendants(!b_);
         for (size_t i = 0; i < descendants_[b_].size(); ++i)
         {
-            Node *d = descendants_[b_][i];
             descendants_[b_][i]->removeSmallBranch();
         }
     }
@@ -173,12 +172,11 @@ void Trace::writeStrategyToFile(ofstream &out)
 
     for (size_t i = 0; i < d.size(); ++i)
     {
-        d[i]->decreaseRefCnt();
-        assert(d[i]->getRefCnt() == 0);
-        node_q.push(d[i]);
         intermediateID++;
         assert(info_map.find(d[i]) == info_map.end());
         info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
+        assert(d[i]->getRefCnt() == info_map[d[i]].second.size());
+        node_q.push(d[i]);
     }
 
     while (!node_q.empty())
@@ -213,7 +211,7 @@ void Trace::writeStrategyToFile(ofstream &out)
                 updateExist(n->decVar_, wire, out);
 
             // update descendants
-            for (int i = 0; i < d.size(); ++i)
+            for (size_t i = 0; i < d.size(); ++i)
             {
                 assert(d[i]);
                 if (info_map.find(d[i]) == info_map.end())
@@ -223,8 +221,7 @@ void Trace::writeStrategyToFile(ofstream &out)
                 }
                 else
                     info_map[d[i]].second.push_back(wire);
-                d[i]->decreaseRefCnt();
-                if (d[i]->getRefCnt() == 0)
+                if (d[i]->getRefCnt() == info_map[d[i]].second.size())
                     node_q.push(d[i]);
             }
         }
@@ -256,7 +253,7 @@ void Trace::writeStrategyToFile(ofstream &out)
             for (size_t k = 0; k < 2; ++k)
             {
                 vector<Node *> &d = n->descendants_[k];
-                for (int i = 0; i < d.size(); ++i)
+                for (size_t i = 0; i < d.size(); ++i)
                 {
                     assert(d[i]);
                     if (info_map.find(d[i]) == info_map.end())
@@ -266,14 +263,14 @@ void Trace::writeStrategyToFile(ofstream &out)
                     }
                     else
                         info_map[d[i]].second.push_back(w_new[k]);
-                    d[i]->decreaseRefCnt();
-                    if (d[i]->getRefCnt() == 0)
+                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
                 }
             }
         }
     }
 }
+
 void Trace::writeCertificate(ofstream& out, bool isUp)
 {
     assert(source_->getRefCnt() == 0);
@@ -293,6 +290,7 @@ void Trace::writeCertificate(ofstream& out, bool isUp)
 
     writeCertificateRecur(out, source_, isUp);
 }
+
 void Trace::writeCertificateRecur(ofstream& out, Node *node, bool isUp)
 {
     int curr_branch = 0;
@@ -450,7 +448,7 @@ void Trace::writeDNNFRecur(Node *n)
             ++nNode_;
             size_t n = ei.size() + ri.size() + d.size();
             nEdge_ += n;
-            int cnt = 0;
+            size_t cnt = 0;
             ss << "A " << n << ' ';
             for (int l : ei)
             {

@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
       input_file = argv[i];
   }
 
-  theSolver.solve(input_file);
+  if (!theSolver.solve(input_file)) return -1;
   if(theSolver.config().strategy_generation){
     string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
     cout << "strategy written to " << output_file << endl;

@@ -232,6 +232,16 @@ public:
           lit_values) {
   }
 
+  ~ComponentAnalyzer() {
+    for (Component* c : component_stack_)
+      delete c;
+    component_stack_.clear();
+    delete[] clauses_seen_;
+    delete[] variables_seen_;
+    delete[] pos_var_seen_;
+    delete[] neg_var_seen_;
+  }
+
   void initialize(LiteralIndexedVector<Literal> & literals,
       vector<LiteralID> &lit_pool, vector<QType>& var_type );
 
@@ -283,12 +293,12 @@ private:
 
   vector<unsigned> var_frequency_scores_;
 
-  CA_SearchState *clauses_seen_;
-  CA_SearchState *variables_seen_;
+  CA_SearchState *clauses_seen_ = nullptr;
+  CA_SearchState *variables_seen_ = nullptr;
 
   //NOTE ssat
-  unsigned* pos_var_seen_;
-  unsigned* neg_var_seen_; 
+  unsigned* pos_var_seen_ = nullptr;
+  unsigned* neg_var_seen_ = nullptr; 
   vector<QType> var2Q_;
   vector<ClauseOfs> cls_id_to_Ofs_;
 

@@ -28,7 +28,7 @@ then the witness (Skolem functions), written in a BLIF file, will be generated i
 
 To enable dec-DNNF generation, run the command:
 ```
-$ SharpSSAT -s -d [SDIMACS_File]`
+$ SharpSSAT -s -d [NNF_Output] [SDIMACS_File]`
 ```
 
 To enable certificate generation, run the command:

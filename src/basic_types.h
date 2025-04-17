@@ -90,6 +90,7 @@ enum SOLVER_StateT {
 struct SolverConfiguration {
 
   bool ssat_solving = false;
+  bool include_forall = false;
   bool perform_component_caching = true;
   bool perform_clause_learning = true;
   bool perform_failed_lit_test = false;

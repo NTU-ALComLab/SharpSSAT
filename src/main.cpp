@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
       SolverConfiguration::quiet = true;
     else if (strcmp(argv[i], "-verbose") == 0)
       theSolver.config().verbose = true;
+    else if (strcmp(argv[i], "-e") == 0)
+      theSolver.config().include_forall = true;
     else if (strcmp(argv[i], "-t") == 0) {
       if (argc <= i + 1) {
         cout << " wrong parameters" << endl;

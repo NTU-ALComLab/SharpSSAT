@@ -14,7 +14,8 @@ using namespace std;
 enum NodeType{
     RAND = 0,
     EXIST = 1,
-    DUMMY = 2
+    UNIV = 2,
+    DUMMY = 3
 };
 
 
@@ -32,15 +33,27 @@ public:
 
     ~Node(){ Node::nodeCnt_--; }
 
-    void setDecVar(unsigned v, bool isR, bool sign){ 
+    void setDecVar(unsigned v, bool isR, bool isU, bool sign){ 
         decVar_ = v; 
-        type_ = isR ? RAND : EXIST;
+        //type_ = isR ? RAND : EXIST;
+        if(isR){
+            type_ = RAND;
+        }else if(isU){
+            type_ = UNIV;
+        }else{
+            type_ = EXIST;
+        }
         curBranch_ = sign ? 1 : 0;
         // cout << "set current branch to " << curBranch_ << endl;
     }
 
     void markMaxBranch(bool b){ 
         assert(type_==EXIST);
+        // cout << "Mark MaxBranch for " << decVar_ << " " << b << endl; 
+        b_ = b; 
+    }
+    void markMinBranch(bool b){ 
+        assert(type_==UNIV);
         // cout << "Mark MaxBranch for " << decVar_ << " " << b << endl; 
         b_ = b; 
     }
@@ -67,6 +80,7 @@ public:
     void removeSmallBranch();
 
     bool isExist(){ return type_==EXIST ;}
+    bool isUniv(){ return type_==UNIV ;}
 
     // debug function
     void printDescendants();
@@ -85,6 +99,14 @@ public:
 
     void addRandomImplication(int imp){
         randomImp_[curBranch_].push_back(imp);
+    }
+
+    void recordUnivImplications(vector<int>& imp){
+        univImp_[curBranch_] = imp;
+    }
+
+    void addUnivImplication(int imp){
+        univImp_[curBranch_].push_back(imp);
     }
 
     void recordPureLiterals(vector<int>& plit){
@@ -135,6 +157,7 @@ private:
     bool            b_;             // maximum probability branch,
     bool            curBranch_; 
     vector<int>     existImp_[2];   // existential implications 
+    vector<int>     univImp_[2];   // universal implications 
     vector<int>     randomImp_[2];  // random implications 
     vector<int>     pureLits_[2];   // pure literals
     bool            hasEarlyReturn_ = false;
@@ -190,10 +213,14 @@ public:
 
     void cleanMinBranch(Node* n);
     string existName(size_t var){ return "e" + to_string(var) + "_" + to_string(existID[var]); }
+    string univName(size_t var){ return "u" + to_string(var) + "_" + to_string(existID[var]); }
     size_t getExistID(size_t var){ return existID[var]; }
     void initExistPinID(size_t nVars){ existID.resize(nVars+1, 0); }
 
     void writeStrategyToFile(ofstream&);
+    void writeExistStrategyToFile(ofstream&);
+    void writeUnivStrategyToFile(ofstream&);
+    void restoreRefCnt();
     void writeDNNF(ofstream&);
     void writeDNNFRecur(Node*);
     void writeCertificate(ofstream& out, bool isUp);
@@ -212,8 +239,11 @@ private:
     vector<int>     lit2NodeId_;
 
     void    updateExist(size_t ev, size_t w, ofstream& out);
+    void    updateUniv(size_t ev, size_t w, ofstream& out);
     void    updateIntermediate(size_t wire, vector<size_t>& par_wire, ofstream& out);
     size_t  updateRandom(size_t rv, size_t wire, bool sign, ofstream& out);
+    size_t  updateUnivInput(size_t rv, size_t wire, bool sign, ofstream& out);
+    size_t  updateExistInput(size_t rv, size_t wire, bool sign, ofstream& out);
 };
 
 

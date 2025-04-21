@@ -114,6 +114,14 @@ void Trace::updateExist(size_t ev, size_t w, ofstream &out)
     out << " " << existName(ev) << "\n00 0"; // e' = e v w
 }
 
+void Trace::updateUniv(size_t ev, size_t w, ofstream& out)
+{
+    out << "\n.names" 
+        << " w" << w << " " << univName(ev);
+    existID[ev]++;
+    out << " " << univName(ev) << "\n00 0"; // e' = e v w
+}
+
 void Trace::updateIntermediate(size_t wire, vector<size_t> &par_wire, ofstream &out)
 {
     // out << "\n# update intermetiate";
@@ -132,6 +140,24 @@ size_t Trace::updateRandom(size_t rv, size_t wire, bool sign, ofstream &out)
     out << "\n.names";
     out << " w" << wire << " r" << rv << " w" << new_wire;
     out << "\n1" << (sign ? "0" : "1") << " 1";
+    return new_wire;
+}
+
+// new_wire = wire & (uv' or uv)
+size_t Trace::updateUnivInput(size_t uv, size_t wire, bool sign, ofstream& out){
+    size_t new_wire = intermediateID + (sign ? 1 : 2);
+    out << "\n.names";
+    out << " w" << wire << " u" << uv << " w" << new_wire;
+    out << "\n1" << ( sign ? "0" : "1") << " 1";
+    return new_wire;
+}
+
+// new_wire = wire & (ev' or ev)
+size_t Trace::updateExistInput(size_t ev, size_t wire, bool sign, ofstream& out){
+    size_t new_wire = intermediateID + (sign ? 1 : 2);
+    out << "\n.names";
+    out << " w" << wire << " e" << ev << " w" << new_wire;
+    out << "\n1" << ( sign ? "0" : "1") << " 1";
     return new_wire;
 }
 
@@ -265,6 +291,346 @@ void Trace::writeStrategyToFile(ofstream &out)
                         info_map[d[i]].second.push_back(w_new[k]);
                     if (d[i]->getRefCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
+                }
+            }
+        }
+    }
+}
+
+void Trace::writeExistStrategyToFile(ofstream& out){
+    // compact DAG, remove samll branch of exist node
+    // we currently cannot do it due to the implementation of universal strategy generation
+
+    // Node::resetGlobalVisited();
+    // source_->removeSmallBranch();
+    // cout << "After compacting trace ..." << endl;
+    // cout << "# nodes \t" << Node::nodeCnt_ << endl;
+    // cout << "# edges \t" << Node::edgeCnt_ << endl;
+
+    // source_->printDescendants();
+
+
+    // topological order traversal and write strategy accordingly
+    // use out.tellp() to get the size of current file
+    unordered_map<Node*, WireInfo> info_map;
+    queue<Node*> node_q;
+
+    assert(source_->getRefCnt()==0);
+    vector<int>& ei = source_->existImp_[1];
+    vector<Node*>& d = source_->descendants_[1];
+    intermediateID ++;
+    out << "\n.names " << "w" << intermediateID << "\n1";
+    info_map[source_] = WireInfo(intermediateID, vector<size_t>());
+
+    for(size_t i=0; i < ei.size(); ++i){
+        assert( ei[i]!=0 );
+        if( ei[i] > 0 ){
+            existID[ei[i]]++;
+            out << "\n.names " << existName(ei[i]) << "\n1";
+        }
+    }
+    
+    
+    for(size_t i=0; i<d.size(); ++i){
+        intermediateID++;
+        assert(info_map.find(d[i]) == info_map.end());
+        info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
+        assert(d[i]->getRefCnt() == info_map[d[i]].second.size());
+        node_q.push(d[i]);
+    }
+
+    while(!node_q.empty()){
+        Node* n = node_q.front(); node_q.pop();
+        assert(n);
+
+        if(out.tellp() > MAX_FILE_SIZE){
+            cerr << "Warning!! strategy is too large, thus deleted" << endl;
+            break;
+        }
+        if(n->type_==EXIST){
+            vector<Node*>& d = n->descendants_[n->b_]; // max branch descendants
+            vector<int>& ei = n->existImp_[n->b_];     // max branch implication
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            // update exist implication and decision
+            for(size_t i=0; i < ei.size(); ++i){
+                assert( ei[i]!=0 );
+                if( ei[i] > 0 )
+                    updateExist(ei[i], wire, out);
+            }
+            if(n->b_)
+                updateExist( n->decVar_,  wire,  out);
+
+            // update descendants
+            for(int i=0; i<d.size(); ++i){
+                assert(d[i]);
+                if( info_map.find(d[i])==info_map.end() ){
+                    intermediateID++;
+                    info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, wire) );
+                }
+                else
+                    info_map[d[i]].second.push_back(wire);
+                if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    node_q.push(d[i]);
+            }
+
+        }
+        else if(n->type_==RAND){
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            size_t w_new[2] = {0};
+
+            w_new[0] = updateRandom(n->decVar_, wire, 1, out);
+            w_new[1] = updateRandom(n->decVar_, wire, 0, out);
+            intermediateID += 2;
+            for(size_t k=0; k<2; ++k){
+                vector<int>& ei = n->existImp_[k];
+                for(size_t i=0; i < ei.size(); ++i){
+                    assert( ei[i]!=0 );
+                    if( ei[i] > 0 )
+                        updateExist(ei[i], w_new[k], out);
+                }
+            }
+
+            // update descendants
+            for(size_t k=0; k<2; ++k){
+                vector<Node*>& d = n->descendants_[k];
+                for(int i=0; i<d.size(); ++i){
+                    assert(d[i]);
+                    if( info_map.find(d[i])==info_map.end() ){
+                        intermediateID++;
+                        info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, w_new[k]) );
+                    }
+                    else
+                        info_map[d[i]].second.push_back(w_new[k]);
+                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                        node_q.push(d[i]);
+                }
+            }
+        }
+        else if(n->type_==UNIV){
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            size_t w_new[2] = {0};
+
+            w_new[0] = updateUnivInput(n->decVar_, wire, 1, out);
+            w_new[1] = updateUnivInput(n->decVar_, wire, 0, out);
+            intermediateID += 2;
+            for(size_t k=0; k<2; ++k){
+                vector<int>& ei = n->existImp_[k];
+                for(size_t i=0; i < ei.size(); ++i){
+                    assert( ei[i]!=0 );
+                    if( ei[i] > 0 )
+                        updateExist(ei[i], w_new[k], out);
+                }
+            }
+
+            // update descendants
+            for(size_t k=0; k<2; ++k){
+                vector<Node*>& d = n->descendants_[k];
+                for(int i=0; i<d.size(); ++i){
+                    assert(d[i]);
+                    if( info_map.find(d[i])==info_map.end() ){
+                        intermediateID++;
+                        info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, w_new[k]) );
+                    }
+                    else
+                        info_map[d[i]].second.push_back(w_new[k]);
+                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                        node_q.push(d[i]);
+                }
+            }
+        }      
+    }
+    
+}
+
+void Trace::writeUnivStrategyToFile(ofstream& out){
+    intermediateID = 0;
+
+    unordered_map<Node*, WireInfo> info_map;
+    queue<Node*> node_q;
+
+    assert(source_->getRefCnt()==0);
+    vector<int>& ui = source_->univImp_[1];
+    vector<Node*>& d = source_->descendants_[1];
+    intermediateID ++;
+    out << "\n.names " << "w" << intermediateID << "\n1";
+    info_map[source_] = WireInfo(intermediateID, vector<size_t>());
+
+    for(size_t i=0; i < ui.size(); ++i){
+        assert( ui[i]!=0 );
+        if( ui[i] > 0 ){
+            existID[ui[i]]++;
+            out << "\n.names " << univName(ui[i]) << "\n1";
+        }
+    }
+
+    for(size_t i=0; i<d.size(); ++i){
+        intermediateID++;
+        assert(info_map.find(d[i]) == info_map.end());
+        info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
+        assert(d[i]->getRefCnt() == info_map[d[i]].second.size());
+        node_q.push(d[i]);
+    }
+
+    while(!node_q.empty()){
+        Node* n = node_q.front(); node_q.pop();
+        assert(n);
+
+        if(out.tellp() > MAX_FILE_SIZE){
+            cerr << "Warning!! strategy is too large, thus deleted" << endl;
+            break;
+        }
+        if(n->type_==UNIV){
+            vector<Node*>& d = n->descendants_[n->b_]; // min branch descendants
+            vector<int>& ui = n->univImp_[n->b_];     // min branch implication
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            // update universal implication and decision
+            for(size_t i=0; i < ui.size(); ++i){
+                assert( ui[i]!=0 );
+                if( ui[i] > 0 )
+                    updateUniv(ui[i], wire, out);
+            }
+            if(n->b_)
+                updateUniv( n->decVar_,  wire,  out);
+
+            // update descendants
+            for(int i=0; i<d.size(); ++i){
+                assert(d[i]);
+                if( info_map.find(d[i])==info_map.end() ){
+                    intermediateID++;
+                    info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, wire) );
+                }
+                else
+                    info_map[d[i]].second.push_back(wire);
+                if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    node_q.push(d[i]);
+            }
+
+        }
+        else if(n->type_==RAND){
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            size_t w_new[2] = {0};
+
+            w_new[0] = updateRandom(n->decVar_, wire, 1, out);
+            w_new[1] = updateRandom(n->decVar_, wire, 0, out);
+            intermediateID += 2;
+            for(size_t k=0; k<2; ++k){
+                vector<int>& ui = n->univImp_[k];
+                for(size_t i=0; i < ui.size(); ++i){
+                    assert( ui[i]!=0 );
+                    if( ui[i] > 0 )
+                        updateUniv(ui[i], w_new[k], out);
+                }
+            }
+
+            // update descendants
+            for(size_t k=0; k<2; ++k){
+                vector<Node*>& d = n->descendants_[k];
+                for(int i=0; i<d.size(); ++i){
+                    assert(d[i]);
+                    if( info_map.find(d[i])==info_map.end() ){
+                        intermediateID++;
+                        info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, w_new[k]) );
+                    }
+                    else
+                        info_map[d[i]].second.push_back(w_new[k]);
+                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                        node_q.push(d[i]);
+                }
+            }
+        }
+        else if(n->type_==EXIST){
+            WireInfo wi = info_map[n];
+            size_t wire = wi.first;
+            vector<size_t>& par_wire = wi.second;
+
+            updateIntermediate(wire, par_wire, out);
+
+            size_t w_new[2] = {0};
+
+            w_new[0] = updateExistInput(n->decVar_, wire, 1, out);
+            w_new[1] = updateExistInput(n->decVar_, wire, 0, out);
+            intermediateID += 2;
+            for(size_t k=0; k<2; ++k){
+                vector<int>& ui = n->univImp_[k];
+                for(size_t i=0; i < ui.size(); ++i){
+                    assert( ui[i]!=0 );
+                    if( ui[i] > 0 )
+                        updateUniv(ui[i], w_new[k], out);
+                }
+            }
+
+            // update descendants
+            for(size_t k=0; k<2; ++k){
+                vector<Node*>& d = n->descendants_[k];
+                for(int i=0; i<d.size(); ++i){
+                    assert(d[i]);
+                    if( info_map.find(d[i])==info_map.end() ){
+                        intermediateID++;
+                        info_map[d[i]] = WireInfo( intermediateID, vector<size_t>( 1, w_new[k]) );
+                    }
+                    else
+                        info_map[d[i]].second.push_back(w_new[k]);
+                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                        node_q.push(d[i]);
+                }
+            }
+        }      
+    }
+}
+
+void Trace::restoreRefCnt(){
+    queue<Node*> node_q;
+    assert(source_->getRefCnt()==0);
+    vector<Node*>& d = source_->descendants_[1];
+    for(size_t i=0; i<d.size(); ++i){
+        d[i]->increaseRefCnt();
+        assert(d[i]->getRefCnt()==1);
+        node_q.push(d[i]);
+    }
+    while(!node_q.empty()){
+        Node* n = node_q.front(); node_q.pop();
+        assert(n);
+        if(n->type_==EXIST){
+            vector<Node*>& d = n->descendants_[n->b_]; // max branch descendants
+            for(int i=0; i<d.size(); ++i){
+                assert(d[i]);
+                if(d[i]->getRefCnt()==0)
+                    node_q.push(d[i]);
+                d[i]->increaseRefCnt();
+            }
+        }else{
+            for(size_t k=0; k<2; ++k){
+                vector<Node*>& d = n->descendants_[k];
+                for(int i=0; i<d.size(); ++i){
+                    assert(d[i]);
+                    if(d[i]->getRefCnt()==0)
+                        node_q.push(d[i]);
+                    d[i]->increaseRefCnt();
                 }
             }
         }

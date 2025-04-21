@@ -63,7 +63,14 @@ protected:
   }
 
   double prob(LiteralID lit){
-    if (var2Prob_[lit.var()]==-1) return 1;
+    //if (var2Prob_[lit.var()]==-1) return 1;
+    if (var2Prob_[lit.var()]==-1){
+      if (var2Q_[lit.var()]==EXISTENTIAL){
+        return 1;
+      }else{
+        return 0;
+      }
+    }
     return ( lit.sign() ? var2Prob_[lit.var()] : 1-var2Prob_[lit.var()] );
   }
 

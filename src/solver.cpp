@@ -36,9 +36,16 @@ bool Solver::simplePreProcess() {
     stack_.top().includePathProb( prob(lit) );
     if(qType(lit)==EXISTENTIAL)
       exist_imp_.push_back(lit.toInt());
-    else{
-        assert(qType(lit) == RANDOM);
-        random_imp_.push_back(lit.toInt());
+    else if(qType(lit)==UNIVERSAL){
+      if(!config_.include_forall){
+        cout << "error: containing universal variables";
+        exit(0);
+      }
+      univ_imp_.push_back(lit.neg().toInt());
+      return false;
+    }else{
+      assert(qType(lit) == RANDOM);
+      random_imp_.push_back(lit.toInt());
     }
   }
 //END process unit clauses
@@ -58,6 +65,8 @@ bool Solver::simplePreProcess() {
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         stack_.top().getNode()->recordExistImplications(exist_imp_);
         stack_.top().getNode()->recordRandomImplications(random_imp_);
+        if(config_.include_forall)
+          stack_.top().getNode()->recordUnivImplications(univ_imp_);
       }
     }
     else
@@ -391,11 +400,13 @@ bool Solver::ssatDecideLiteral() {
 
   //ssat NOTE
   stack_.top().setIsDecRandom( qType(theLit)==RANDOM );
+  stack_.top().setIsDecUniver( qType(theLit)==UNIVERSAL );
   stack_.top().setDecProb( prob(theLit) );
   stack_.top().setIsInv( theLit.sign() );
   if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation) {
     Node* n  = new Node();
-    n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
+    // n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
+    n->setDecVar(theLit.var(), qType(theLit)==RANDOM, qType(theLit)==UNIVERSAL, theLit.sign());
     stack_.top().setNode(n);
   }
   // cout << "Decide " << theLit.toInt() << endl;
@@ -454,6 +465,8 @@ retStateT Solver::backtrack() {
         if(n->isExist()) {
           // cout << "Mark Max Branch " << stack_.top().maxProbBranch() << endl;
           n->markMaxBranch(stack_.top().maxProbBranch());
+        }else if(n->isUniv()){
+          n->markMinBranch(stack_.top().minProbBranch());
         }
         component_analyzer_.cacheSatProbOf(stack_.top().super_component(), p, stack_.top().getNode());
       }
@@ -554,6 +567,8 @@ bool Solver::bcp() {
   if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
     exist_imp_.clear();
     random_imp_.clear();
+    if(config_.include_forall)
+      univ_imp_.clear();
   }
 
 //BEGIN process unit clauses
@@ -566,7 +581,14 @@ bool Solver::bcp() {
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         if(qType(lit)==EXISTENTIAL)
           exist_imp_.push_back(lit.toInt());
-        else{
+        else if(qType(lit)==UNIVERSAL){
+          if(!config_.include_forall){
+            cout << "error: containing universal variables";
+            exit(0);
+          }
+          univ_imp_.push_back(lit.neg().toInt());
+        }
+          else{
             assert(qType(lit) == RANDOM);
             random_imp_.push_back(lit.toInt());
         }
@@ -609,6 +631,8 @@ bool Solver::bcp() {
       Node* n = stack_.top().getNode();
       n->recordExistImplications(exist_imp_);
       n->recordRandomImplications(random_imp_);
+      if(config_.include_forall)
+        n->recordUnivImplications(univ_imp_);
     }
     else{
         stack_.top().getNode()->addDescendant(trace_->getConstant(0));
@@ -626,6 +650,16 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
     for (auto bt = literal(unLit).binary_links_.begin(); *bt != SENTINEL_LIT;
         bt++) {
       if (isResolved(*bt)) {
+        setConflictState(unLit, *bt);
+        return false;
+      }
+      if (isActive(*bt) && qType(*bt) == UNIVERSAL) {
+        if(!config_.include_forall){
+          cout << "error: containing universal variables";
+          exit(0);
+        }
+        if (config_.strategy_generation)
+          univ_imp_.push_back(bt->neg().toInt());
         setConflictState(unLit, *bt);
         return false;
       }
@@ -665,6 +699,16 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         // or p_unLit stays resolved
         // and we have hence no free literal left
         // for p_otherLit remain poss: Active or Resolved
+        if (isActive(*p_otherLit) && qType(*p_otherLit) == UNIVERSAL) { // active universal otherLit
+          if(!config_.include_forall){
+            cout << "error: containing universal variables";
+            exit(0);
+          }
+          if (config_.strategy_generation)
+            univ_imp_.push_back(p_otherLit->neg().toInt());
+          setConflictState(*itcl);
+          return false;
+        }
         if (setLiteralIfFree(*p_otherLit, Antecedent(*itcl))) { // implication
           stack_.top().includePathProb( prob(*p_otherLit) );
           if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
@@ -1085,3 +1129,135 @@ void Solver::generateCertificate(const string& up, const string& low, const stri
   out.close();
 }
 
+void Solver::initializeExistBLIF(ofstream& out){
+  trace_->initExistPinID(num_variables());
+  out << ".model strategy";
+  out << "\n.inputs";
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == RANDOM )  
+  //     out << " r" << i;
+  // }
+
+  for(auto v : orderedVar_){
+    // cout<<v<<" "<<var2Q_[v];
+    if(var2Q_[v] == RANDOM){
+      // cout << "rand" << endl;
+      out << " r" << v ;
+    }else if(var2Q_[v] == UNIVERSAL){
+      // cout << "uni" << endl;
+      out << " u" << v ;
+    }
+  }
+
+  out << "\n.outputs";
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << " e" << i;
+  // }
+
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == EXISTENTIAL)
+      out << " e" << v ;
+  }
+
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << "\n.names " << trace_->existName(i) << "\n0";
+  // } 
+
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == EXISTENTIAL)
+      out << "\n.names " << trace_->existName(v) << "\n0";
+  }
+}
+
+void Solver::initializeUnivBLIF(ofstream& out){
+  trace_->initExistPinID(num_variables());
+  out << ".model strategy";
+  out << "\n.inputs";
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == RANDOM )  
+  //     out << " r" << i;
+  // }
+
+  for(auto v : orderedVar_){
+    // cout<<v<<" "<<var2Q_[v];
+    if(var2Q_[v] == RANDOM){
+      // cout << "rand" << endl;
+      out << " r" << v ;
+    }else if(var2Q_[v] == EXISTENTIAL){
+      // cout << "uni" << endl;
+      out << " e" << v ;
+    }
+  }
+
+  out << "\n.outputs";
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << " e" << i;
+  // }
+
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == UNIVERSAL)
+      out << " u" << v ;
+  }
+
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << "\n.names " << trace_->existName(i) << "\n0";
+  // } 
+
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == UNIVERSAL)
+      out << "\n.names " << trace_->univName(v) << "\n0";
+  }
+}
+
+void Solver::finalizeExistBLIF(ofstream& out){
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == EXISTENTIAL)
+      out << "\n.names " << trace_->existName(v) << " e" << v << "\n1 1";
+  }
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << "\n.names " << trace_->existName(i) << " e" << i << "\n1 1";
+  // } 
+}
+
+void Solver::finalizeUnivBLIF(ofstream& out){
+  for(auto v : orderedVar_){
+    if(var2Q_[v] == UNIVERSAL)
+      out << "\n.names " << trace_->univName(v) << " u" << v << "\n1 1";
+  }
+  // for(size_t i=1; i<=num_variables(); ++i){
+  //   if(var2Lev_[i]==-1) continue; // unused variables;
+  //   if(var2Q_[i] == EXISTENTIAL )  
+  //     out << "\n.names " << trace_->existName(i) << " e" << i << "\n1 1";
+  // } 
+}
+
+void Solver::generateExistStrategy(const string& output_file){
+  // 1. initialize blif file
+  ofstream out(output_file);
+  initializeExistBLIF(out);
+  trace_->writeExistStrategyToFile(out);
+  finalizeExistBLIF(out);
+  out.close();
+}
+
+void Solver::generateUnivStrategy(const string& output_file){
+  // 1. initialize blif file
+  ofstream out(output_file);
+  initializeUnivBLIF(out);
+  // trace_->restoreRefCnt();
+  trace_->writeUnivStrategyToFile(out);
+  finalizeUnivBLIF(out);
+  out.close();
+}

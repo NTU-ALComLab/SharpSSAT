@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -p                      \t turn on pure literal detection" << endl;
     cout << "\t -c                      \t turn on pure component detection" << endl;
     cout << "\t -k                      \t turn on strategy generation"  << endl;
+    cout << "\t -e                      \t enable the for all quatifier"  << endl;
     cout << "\t -d [file]               \t turn on dec-DNNF writing"  << endl;
     cout << "\t -l                      \t turn on certficate generation"  << endl;
     cout << "\t" << endl;
@@ -102,9 +103,18 @@ int main(int argc, char *argv[]) {
 
   if (!theSolver.solve(input_file)) return -1;
   if(theSolver.config().strategy_generation){
-    string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
-    cout << "strategy written to " << output_file << endl;
-    theSolver.generateStrategy(output_file);
+    if(theSolver.config().include_forall){
+      string output_file_exist = regex_replace(input_file, regex("[.]sdimacs"), "_exist.blif");
+      cout << "existential strategy written to " << output_file_exist << endl;
+      theSolver.generateExistStrategy(output_file_exist);
+      string output_file_univ = regex_replace(input_file, regex("[.]sdimacs"), "_univ.blif");
+      cout << "universal strategy written to " << output_file_univ << endl;
+      theSolver.generateUnivStrategy(output_file_univ);
+    }else{
+      string output_file = regex_replace(input_file, regex("[.]sdimacs"), ".blif");
+      cout << "strategy written to " << output_file << endl;
+      theSolver.generateStrategy(output_file);
+    }
   }
   if(theSolver.config().certificate_generation){
     string upTrace_file = regex_replace(input_file, regex("[.]sdimacs"), "_up.nnf");

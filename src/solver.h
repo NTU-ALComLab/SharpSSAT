@@ -68,6 +68,8 @@ public:
 
   bool solve(const string & file_name);
   void generateStrategy(const string & file_name);
+  void generateExistStrategy(const string & file_name);
+  void generateUnivStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
   void generateCertificate(const string & up, const string & low, const string & prob);
 
@@ -103,6 +105,7 @@ private:
   Trace*        trace_ = nullptr;
   ofstream      out_file_;      // output strategy file
   vector<int>   exist_imp_;     // temp vec holding exist implication literals
+  vector<int>   univ_imp_;      // temp vec holding universal implication literals
   vector<int>   random_imp_;    // temp vec holding random implication literals
   string        DNNF_filename_; // output dec-DNNF filname
 
@@ -145,6 +148,10 @@ private:
   // SSAT strategy generation
   void initializeBLIF(ofstream&);
   void finalizeBLIF(ofstream&);
+  void initializeExistBLIF(ofstream&);
+  void initializeUnivBLIF(ofstream&);
+  void finalizeExistBLIF(ofstream&);
+  void finalizeUnivBLIF(ofstream&);
 
   /////////////////////////////////////////////
    //  BEGIN small helper functions

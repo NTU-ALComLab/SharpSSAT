@@ -1146,7 +1146,7 @@ void Solver::initializeExistBLIF(ofstream& out){
       out << " r" << v ;
     }else if(var2Q_[v] == UNIVERSAL){
       // cout << "uni" << endl;
-      out << " u" << v ;
+      out << " a" << v ;
     }
   }
 
@@ -1204,7 +1204,7 @@ void Solver::initializeUnivBLIF(ofstream& out){
 
   for(auto v : orderedVar_){
     if(var2Q_[v] == UNIVERSAL)
-      out << " u" << v ;
+      out << " a" << v ;
   }
 
   // for(size_t i=1; i<=num_variables(); ++i){
@@ -1234,7 +1234,7 @@ void Solver::finalizeExistBLIF(ofstream& out){
 void Solver::finalizeUnivBLIF(ofstream& out){
   for(auto v : orderedVar_){
     if(var2Q_[v] == UNIVERSAL)
-      out << "\n.names " << trace_->univName(v) << " u" << v << "\n1 1";
+      out << "\n.names " << trace_->univName(v) << " a" << v << "\n1 1";
   }
   // for(size_t i=1; i<=num_variables(); ++i){
   //   if(var2Lev_[i]==-1) continue; // unused variables;

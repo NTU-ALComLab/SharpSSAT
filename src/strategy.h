@@ -213,7 +213,7 @@ public:
 
     void cleanMinBranch(Node* n);
     string existName(size_t var){ return "e" + to_string(var) + "_" + to_string(existID[var]); }
-    string univName(size_t var){ return "u" + to_string(var) + "_" + to_string(existID[var]); }
+    string univName(size_t var){ return "a" + to_string(var) + "_" + to_string(existID[var]); }
     size_t getExistID(size_t var){ return existID[var]; }
     void initExistPinID(size_t nVars){ existID.resize(nVars+1, 0); }
 

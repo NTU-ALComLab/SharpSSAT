@@ -114,12 +114,12 @@ void Trace::updateExist(size_t ev, size_t w, ofstream &out)
     out << " " << existName(ev) << "\n00 0"; // e' = e v w
 }
 
-void Trace::updateUniv(size_t ev, size_t w, ofstream& out)
+void Trace::updateUniv(size_t uv, size_t w, ofstream& out)
 {
     out << "\n.names" 
-        << " w" << w << " " << univName(ev);
-    existID[ev]++;
-    out << " " << univName(ev) << "\n00 0"; // e' = e v w
+        << " w" << w << " " << univName(uv);
+    existID[uv]++;
+    out << " " << univName(uv) << "\n00 0"; // u' = u v w
 }
 
 void Trace::updateIntermediate(size_t wire, vector<size_t> &par_wire, ofstream &out)
@@ -143,11 +143,11 @@ size_t Trace::updateRandom(size_t rv, size_t wire, bool sign, ofstream &out)
     return new_wire;
 }
 
-// new_wire = wire & (uv' or uv)
+// new_wire = wire & (av' or av)
 size_t Trace::updateUnivInput(size_t uv, size_t wire, bool sign, ofstream& out){
     size_t new_wire = intermediateID + (sign ? 1 : 2);
     out << "\n.names";
-    out << " w" << wire << " u" << uv << " w" << new_wire;
+    out << " w" << wire << " a" << uv << " w" << new_wire;
     out << "\n1" << ( sign ? "0" : "1") << " 1";
     return new_wire;
 }

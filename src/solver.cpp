@@ -39,7 +39,7 @@ bool Solver::simplePreProcess() {
     else if(qType(lit)==UNIVERSAL){
       if(!config_.include_forall){
         cout << "error: containing universal variables";
-        exit(0);
+        // exit(0);
       }
       univ_imp_.push_back(lit.neg().toInt());
       return false;
@@ -584,7 +584,7 @@ bool Solver::bcp() {
         else if(qType(lit)==UNIVERSAL){
           if(!config_.include_forall){
             cout << "error: containing universal variables";
-            exit(0);
+            // exit(0);
           }
           univ_imp_.push_back(lit.neg().toInt());
         }
@@ -656,7 +656,7 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
       if (isActive(*bt) && qType(*bt) == UNIVERSAL) {
         if(!config_.include_forall){
           cout << "error: containing universal variables";
-          exit(0);
+          // exit(0);
         }
         if (config_.strategy_generation)
           univ_imp_.push_back(bt->neg().toInt());
@@ -702,7 +702,7 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         if (isActive(*p_otherLit) && qType(*p_otherLit) == UNIVERSAL) { // active universal otherLit
           if(!config_.include_forall){
             cout << "error: containing universal variables";
-            exit(0);
+            // exit(0);
           }
           if (config_.strategy_generation)
             univ_imp_.push_back(p_otherLit->neg().toInt());

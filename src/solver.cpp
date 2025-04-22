@@ -29,6 +29,10 @@ bool Solver::simplePreProcess() {
   unsigned start_ofs = 0;
 //BEGIN process unit clauses
   for (auto lit : unit_clauses_){
+    if(qType(lit)==UNIVERSAL){
+      univ_imp_.push_back(lit.neg().toInt());
+      return false;
+    }
     setLiteralIfFree(lit);
     if(literal_values_[lit] != T_TRI){
         return false;
@@ -36,19 +40,15 @@ bool Solver::simplePreProcess() {
     stack_.top().includePathProb( prob(lit) );
     if(qType(lit)==EXISTENTIAL)
       exist_imp_.push_back(lit.toInt());
-    else if(qType(lit)==UNIVERSAL){
-      if(!config_.include_forall){
-        cout << "error: containing universal variables";
-        // exit(0);
-      }
-      univ_imp_.push_back(lit.neg().toInt());
-      return false;
-    }else{
-      assert(qType(lit) == RANDOM);
-      random_imp_.push_back(lit.toInt());
+    else{
+        assert(qType(lit) == RANDOM);
+        random_imp_.push_back(lit.toInt());
     }
   }
 //END process unit clauses
+  if (config_.include_forall) {
+    if (containUniversalClause()) return false;
+  }
   bool succeeded = BCP(start_ofs);
 
   if (succeeded && !config_.ssat_solving)
@@ -73,6 +73,56 @@ bool Solver::simplePreProcess() {
       HardWireAndCompact();
   }
   return succeeded;
+}
+
+bool Solver::containUniversalClause() {
+  // Check bin clauses
+  for (LiteralID l(1, false); l != literals_.end_lit(); l.inc()) {
+    if (qType(l) != UNIVERSAL) continue;
+    //BEGIN Propagate Bin Clauses
+    for (auto bt = literal(l).binary_links_.begin(); *bt != SENTINEL_LIT; bt++) {
+      if (qType(*bt) == UNIVERSAL) {
+        if (!config_.quiet)
+          cout << "Found universal bin clause!" << endl;
+        if (config_.strategy_generation) {
+          univ_imp_.push_back(l.neg().toInt());
+          univ_imp_.push_back(bt->neg().toInt());
+          initTrace();
+          stack_.back().getNode()->recordUnivImplications(univ_imp_);
+        }
+        return true;
+      }
+    }
+  }
+
+  // Check long clauses
+  bool all_universal = false;
+  for (auto it_lit = literal_pool_.begin(); it_lit != literal_pool_.end(); it_lit++) {
+    if (*it_lit == SENTINEL_LIT) {
+      if (all_universal) {
+        if (!config_.quiet)
+          cout << "Found universal long clause!" << endl;
+        --it_lit;
+        if (config_.strategy_generation) {
+          for ( ; *it_lit != SENTINEL_LIT; --it_lit) {
+            univ_imp_.push_back(it_lit->neg().toInt());
+          }
+          initTrace();
+          stack_.back().getNode()->recordUnivImplications(univ_imp_);
+        }
+        return true;
+      }
+      all_universal = true;
+      if (it_lit + 1 == literal_pool_.end())
+        break;
+      it_lit += ClauseHeader::overheadInLits();
+    } else {
+      if (qType(*it_lit) != UNIVERSAL) all_universal = false;
+    }
+  }
+  if (!config_.quiet)
+    cout << "No universal clauses found in preprocessing" << endl;
+  return false;
 }
 
 bool Solver::prepFailedLiteralTest() {
@@ -405,7 +455,6 @@ bool Solver::ssatDecideLiteral() {
   stack_.top().setIsInv( theLit.sign() );
   if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation) {
     Node* n  = new Node();
-    // n->setDecVar(theLit.var(), qType(theLit)==RANDOM, theLit.sign());
     n->setDecVar(theLit.var(), qType(theLit)==RANDOM, qType(theLit)==UNIVERSAL, theLit.sign());
     stack_.top().setNode(n);
   }
@@ -582,13 +631,9 @@ bool Solver::bcp() {
         if(qType(lit)==EXISTENTIAL)
           exist_imp_.push_back(lit.toInt());
         else if(qType(lit)==UNIVERSAL){
-          if(!config_.include_forall){
-            cout << "error: containing universal variables";
-            // exit(0);
-          }
           univ_imp_.push_back(lit.neg().toInt());
         }
-          else{
+        else{
             assert(qType(lit) == RANDOM);
             random_imp_.push_back(lit.toInt());
         }
@@ -654,10 +699,6 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         return false;
       }
       if (isActive(*bt) && qType(*bt) == UNIVERSAL) {
-        if(!config_.include_forall){
-          cout << "error: containing universal variables";
-          // exit(0);
-        }
         if (config_.strategy_generation)
           univ_imp_.push_back(bt->neg().toInt());
         setConflictState(unLit, *bt);
@@ -700,10 +741,6 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
         // and we have hence no free literal left
         // for p_otherLit remain poss: Active or Resolved
         if (isActive(*p_otherLit) && qType(*p_otherLit) == UNIVERSAL) { // active universal otherLit
-          if(!config_.include_forall){
-            cout << "error: containing universal variables";
-            // exit(0);
-          }
           if (config_.strategy_generation)
             univ_imp_.push_back(p_otherLit->neg().toInt());
           setConflictState(*itcl);
@@ -1140,14 +1177,10 @@ void Solver::initializeExistBLIF(ofstream& out){
   // }
 
   for(auto v : orderedVar_){
-    // cout<<v<<" "<<var2Q_[v];
-    if(var2Q_[v] == RANDOM){
-      // cout << "rand" << endl;
+    if(var2Q_[v] == RANDOM)
       out << " r" << v ;
-    }else if(var2Q_[v] == UNIVERSAL){
-      // cout << "uni" << endl;
+    else if(var2Q_[v] == UNIVERSAL)
       out << " a" << v ;
-    }
   }
 
   out << "\n.outputs";
@@ -1186,13 +1219,10 @@ void Solver::initializeUnivBLIF(ofstream& out){
 
   for(auto v : orderedVar_){
     // cout<<v<<" "<<var2Q_[v];
-    if(var2Q_[v] == RANDOM){
-      // cout << "rand" << endl;
+    if(var2Q_[v] == RANDOM)
       out << " r" << v ;
-    }else if(var2Q_[v] == EXISTENTIAL){
-      // cout << "uni" << endl;
+    else if(var2Q_[v] == EXISTENTIAL)
       out << " e" << v ;
-    }
   }
 
   out << "\n.outputs";
@@ -1256,7 +1286,6 @@ void Solver::generateUnivStrategy(const string& output_file){
   // 1. initialize blif file
   ofstream out(output_file);
   initializeUnivBLIF(out);
-  // trace_->restoreRefCnt();
   trace_->writeUnivStrategyToFile(out);
   finalizeUnivBLIF(out);
   out.close();

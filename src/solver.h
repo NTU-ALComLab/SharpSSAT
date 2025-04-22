@@ -144,6 +144,7 @@ private:
   // begin SSAT
   SOLVER_StateT countSSAT();
   bool ssatDecideLiteral();
+  bool containUniversalClause();
 
   // SSAT strategy generation
   void initializeBLIF(ofstream&);

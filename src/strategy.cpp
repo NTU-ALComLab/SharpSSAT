@@ -335,7 +335,7 @@ void Trace::writeExistStrategyToFile(ofstream& out){
         intermediateID++;
         assert(info_map.find(d[i]) == info_map.end());
         info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
-        assert(d[i]->getRefCnt() == info_map[d[i]].second.size() || (d[i]==constants_[0]));
+        assert(d[i]->getRefCnt() == info_map[d[i]].second.size() || (d[i]==constants_[0] && d[i]->getRefCnt() == info_map[d[i]].second.size()+1));
         node_q.push(d[i]);
     }
 
@@ -482,7 +482,7 @@ void Trace::writeUnivStrategyToFile(ofstream& out){
         intermediateID++;
         assert(info_map.find(d[i]) == info_map.end());
         info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
-        assert(d[i]->getRefCnt() == info_map[d[i]].second.size()  || (d[i]==constants_[0]));
+        assert(d[i]->getRefCnt() == info_map[d[i]].second.size()  || (d[i]==constants_[0] && d[i]->getRefCnt() == info_map[d[i]].second.size()+1));
         node_q.push(d[i]);
     }
 

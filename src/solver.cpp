@@ -65,12 +65,13 @@ bool Solver::simplePreProcess() {
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         stack_.top().getNode()->recordExistImplications(exist_imp_);
         stack_.top().getNode()->recordRandomImplications(random_imp_);
-        if(config_.include_forall)
-          stack_.top().getNode()->recordUnivImplications(univ_imp_);
       }
     }
     else
       HardWireAndCompact();
+  }else{
+    if(config_.include_forall)
+      stack_.top().getNode()->recordUnivImplications(univ_imp_);
   }
   return succeeded;
 }
@@ -672,15 +673,15 @@ bool Solver::bcp() {
   }
 
   if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
+    Node* n = stack_.top().getNode();
     if(bSucceeded){
-      Node* n = stack_.top().getNode();
       n->recordExistImplications(exist_imp_);
       n->recordRandomImplications(random_imp_);
-      if(config_.include_forall)
-        n->recordUnivImplications(univ_imp_);
     }
     else{
-        stack_.top().getNode()->addDescendant(trace_->getConstant(0));
+        n->addDescendant(trace_->getConstant(0));
+        if(config_.include_forall)
+          n->recordUnivImplications(univ_imp_);
     }
   }
 

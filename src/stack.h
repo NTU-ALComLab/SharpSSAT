@@ -96,12 +96,12 @@ public:
     //NOTE in ssat if current branch prob=1 and isExist, no need to second branch
     if(isR_) return true;
     if(isU_){
-      if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(0) ) return false;
+      if( active_branch_==0 && (branch_sat_prob_[0]*path_prob_[0])==double(0) ) return false;
       return true;
-    } 
-    if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(1) ) return false;
+    }
+    if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(1) ) return false;    // on first exist branch, prob=1
     if( active_branch_==1 && ((branch_sat_prob_[0]*path_prob_[0]) >=
-                              (branch_sat_prob_[1]*path_prob_[1])) ){
+                              (branch_sat_prob_[1]*path_prob_[1])) ){                           // on second exist branch, existential early return
       return false;
     }
     return true;
@@ -183,7 +183,6 @@ public:
     isR_ = r;
   }
 
-  
   void setIsDecUniver(bool r){
     isU_ = r;
   }

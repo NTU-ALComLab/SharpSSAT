@@ -375,7 +375,9 @@ bool Instance::createfromFile(const string &file_name) {
           var2Q_[var] = qt;
           orderedVar_.push_back(var);
         }
-      }else{
+      }
+      else{
+        assert(c=='a');
         qt = UNIVERSAL;
         while( (input_file >> var) && var!=0  ){
           vars.push_back(var);
@@ -408,6 +410,7 @@ bool Instance::createfromFile(const string &file_name) {
       var2Prob_[var] = (var>0) ? prob : 1-prob;
       input_file >> var; assert(var==0); // dummy
     }
+    else assert (c=='c');
     input_file.ignore(max_ignore, '\n');
   }
   ///END NEW

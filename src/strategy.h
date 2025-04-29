@@ -36,11 +36,11 @@ public:
     void setDecVar(unsigned v, bool isR, bool isU, bool sign){ 
         decVar_ = v; 
         //type_ = isR ? RAND : EXIST;
-        if(isR){
+        if (isR) {
             type_ = RAND;
-        }else if(isU){
+        } else if (isU) {
             type_ = UNIV;
-        }else{
+        } else {
             type_ = EXIST;
         }
         curBranch_ = sign ? 1 : 0;
@@ -154,10 +154,10 @@ private:
     vector<Node*>   descendants_[2];    
     NodeType        type_;
     unsigned        decVar_;        // decision variable
-    bool            b_;             // maximum probability branch,
+    bool            b_;             // maximum/minimum probability branch,
     bool            curBranch_; 
     vector<int>     existImp_[2];   // existential implications 
-    vector<int>     univImp_[2];   // universal implications 
+    vector<int>     univImp_[2];    // universal implications 
     vector<int>     randomImp_[2];  // random implications 
     vector<int>     pureLits_[2];   // pure literals
     bool            hasEarlyReturn_ = false;

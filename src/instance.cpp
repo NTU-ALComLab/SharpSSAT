@@ -224,6 +224,7 @@ void Instance::compactConflictLiteralPool(){
 
 bool Instance::deleteConflictClauses() {
   statistics_.times_conflict_clauses_cleaned_++;
+  if (conflict_clauses_.empty()) return true;
   vector<ClauseOfs> tmp_conflict_clauses = conflict_clauses_;
   conflict_clauses_.clear();
   vector<double> tmp_ratios;

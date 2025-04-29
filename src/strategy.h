@@ -220,7 +220,6 @@ public:
     void writeStrategyToFile(ofstream&);
     void writeExistStrategyToFile(ofstream&);
     void writeUnivStrategyToFile(ofstream&);
-    void restoreRefCnt();
     void writeDNNF(ofstream&);
     void writeDNNFRecur(Node*);
     void writeCertificate(ofstream& out, bool isUp);

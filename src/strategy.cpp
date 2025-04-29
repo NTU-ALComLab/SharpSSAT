@@ -637,40 +637,6 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
     }
 }
 
-void Trace::restoreRefCnt(){
-    queue<Node*> node_q;
-    assert(source_->getRefCnt()==0);
-    vector<Node*>& d = source_->descendants_[1];
-    for(size_t i=0; i<d.size(); ++i){
-        d[i]->increaseRefCnt();
-        assert(d[i]->getRefCnt()==1);
-        node_q.push(d[i]);
-    }
-    while(!node_q.empty()){
-        Node* n = node_q.front(); node_q.pop();
-        assert(n);
-        if(n->type_==EXIST){
-            vector<Node*>& d = n->descendants_[n->b_]; // max branch descendants
-            for(int i=0; i<d.size(); ++i){
-                assert(d[i]);
-                if(d[i]->getRefCnt()==0)
-                    node_q.push(d[i]);
-                d[i]->increaseRefCnt();
-            }
-        }else{
-            for(size_t k=0; k<2; ++k){
-                vector<Node*>& d = n->descendants_[k];
-                for(int i=0; i<d.size(); ++i){
-                    assert(d[i]);
-                    if(d[i]->getRefCnt()==0)
-                        node_q.push(d[i]);
-                    d[i]->increaseRefCnt();
-                }
-            }
-        }
-    }
-}
-
 void Trace::writeCertificate(ofstream& out, bool isUp)
 {
     assert(source_->getRefCnt() == 0);

@@ -36,6 +36,13 @@ To enable certificate generation, run the command:
 $ SharpSSAT -s -l -p [SDIMACS_File]`
 ```
 
+To enable solving instances with universal quantifiers, run the command:
+```
+$ SharpSSAT -s -e [SDIMACS_File]`
+```
+
+Witness generation (strategy extraction) can be enabled when solving instances with universal quantifiers. In such cases, two strategy functions will be generated in the same directory as the SDIMACS_File.
+
 ## Reference
 * [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):
   ```

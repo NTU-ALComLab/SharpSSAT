@@ -224,6 +224,7 @@ void Instance::compactConflictLiteralPool(){
 
 bool Instance::deleteConflictClauses() {
   statistics_.times_conflict_clauses_cleaned_++;
+  if (conflict_clauses_.empty()) return true;
   vector<ClauseOfs> tmp_conflict_clauses = conflict_clauses_;
   conflict_clauses_.clear();
   vector<double> tmp_ratios;
@@ -355,7 +356,7 @@ bool Instance::createfromFile(const string &file_name) {
           }
       }
     }
-    else if( c=='r' || c=='e'){ // reading prefix for ssat
+    else if( c=='r' || c=='e' || c=='a' ){ // reading prefix for ssat
       vars.clear();
       QType qt;
       if(c=='r'){
@@ -368,10 +369,20 @@ bool Instance::createfromFile(const string &file_name) {
           orderedVar_.push_back(var);
         }
       }
-      else{
+      else if(c=='e'){
         qt = EXISTENTIAL;
         while( (input_file >> var) && var!=0  ){
           vars.push_back(var);
+          var2Q_[var] = qt;
+          orderedVar_.push_back(var);
+        }
+      }
+      else{
+        assert(c=='a');
+        qt = UNIVERSAL;
+        while( (input_file >> var) && var!=0  ){
+          vars.push_back(var);
+          //var2Prob_[var] = 0;
           var2Q_[var] = qt;
           orderedVar_.push_back(var);
         }
@@ -400,6 +411,7 @@ bool Instance::createfromFile(const string &file_name) {
       var2Prob_[var] = (var>0) ? prob : 1-prob;
       input_file >> var; assert(var==0); // dummy
     }
+    else assert (c=='c');
     input_file.ignore(max_ignore, '\n');
   }
   ///END NEW

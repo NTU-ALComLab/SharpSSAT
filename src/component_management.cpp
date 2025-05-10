@@ -480,6 +480,12 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 
 	vector<VariableIndex>::const_iterator itVEnd;
 
+	static Vars pure_literal_stack_;
+	if (config_.perform_pure_literal) {
+		pure_literal_stack_.clear();
+		pure_literal_stack_.reserve(max_variable_id_ + 1);
+	}
+
 	for (auto vt = component_search_stack_.begin();
 			vt != component_search_stack_.end(); vt++) {
 		// the for-loop is applicable here because componentSearchStack.capacity() == countAllVars()
@@ -513,8 +519,6 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 		// start traversing links to long clauses
 		// not that that list starts right after the 0 termination of the prvious list
 		// hence  pcl_ofs = pvar + 1
-		int* pos_start_ofs = pvar;
-		int* neg_start_ofs = NULL;
 		int* pcl_ofs = pvar;
 		for(int i=0; i<2; ++i){
 			for (; *pcl_ofs != 0; pcl_ofs++) {
@@ -564,29 +568,67 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 				}
 			}
 			pcl_ofs++;
-			if(i==0) neg_start_ofs = pcl_ofs;
 		}
 		
 		
-		if (config_.perform_pure_literal && var2Q_[*vt]==EXISTENTIAL){
-			if ( neg_var_seen_[*vt]==0 && pos_var_seen_[*vt] ){
-				pureEliminate(*vt, pos_start_ofs);
-					if(config_.strategy_generation || config_.compile_DNNF){
-				    top.getNode()->addExistImplication( (*vt) );
-					}
-					if(config_.certificate_generation)
-				    top.getNode()->addPureLiteral( (*vt) );
-			}
-			else if( pos_var_seen_[*vt]==0 && neg_var_seen_[*vt] ){
-				pureEliminate(*vt, neg_start_ofs);
-					if(config_.strategy_generation || config_.compile_DNNF){
-				    top.getNode()->addExistImplication( -(*vt) );
-					}
-					if(config_.certificate_generation)
-						top.getNode()->addPureLiteral( -(*vt) );
+		if (config_.perform_pure_literal) {
+			bool is_pos = (neg_var_seen_[*vt] == 0);
+			bool is_neg = (pos_var_seen_[*vt] == 0);
+			if (is_pos ^ is_neg) {
+				if (var2Q_[*vt] == EXISTENTIAL) pure_literal_stack_.push_back(*vt);
 			}
 		}
+	}
 
+	if (config_.perform_pure_literal) for (auto vt = pure_literal_stack_.begin();
+	vt != pure_literal_stack_.end(); ++vt) {
+		assert(var2Q_[*vt] == EXISTENTIAL);
+
+		int is_pos = (neg_var_seen_[*vt] == 0);
+		if (is_pos && pos_var_seen_[*vt] == 0) continue;
+
+		variables_seen_[*vt] = CA_NIL;
+		if(config_.strategy_generation || config_.compile_DNNF){
+			top.getNode()->addExistImplication(is_pos ? *vt : -(*vt));
+		}
+		if(config_.certificate_generation)
+			top.getNode()->addPureLiteral(is_pos ? *vt : -(*vt));
+		int* pvar = beginOfLinkList(*vt);
+		for (int is_neg_link = 0; is_neg_link < 2; is_neg_link++) {
+			if (is_pos == is_neg_link) while (*pvar != 0) ++pvar;
+			else for (; *pvar != 0; ++pvar) { // remove binary linked literals counts
+				LiteralID lit = LiteralID(*pvar);
+				if (variables_seen_[lit.var()] != CA_SEEN || var2Q_[lit.var()] != EXISTENTIAL) continue;
+				if (lit.sign()) {
+					if (--pos_var_seen_[lit.var()] == 0 && neg_var_seen_[lit.var()] != 0) pure_literal_stack_.push_back(lit.var());
+				}
+				else {
+					if (--neg_var_seen_[lit.var()] == 0 && pos_var_seen_[lit.var()] != 0) pure_literal_stack_.push_back(lit.var());
+				}
+			}
+			++pvar;
+		}
+		// binary clauses processed, start processing long clauses
+		int* pcl_ofs = pvar;
+		for (int is_neg_link = 0; is_neg_link < 2; is_neg_link++) {
+			if (is_neg_link == 0 && !is_pos) while (*pcl_ofs != 0) ++pcl_ofs;
+			else if (is_neg_link && is_pos) break;
+			else for (; *pcl_ofs != 0; ++pcl_ofs) { // remove satisfied long clause literals counts
+				ClauseIndex clause_id = getClauseID(*pcl_ofs);
+				if (clauses_seen_[clause_id] != CA_SEEN) continue;
+				clauses_seen_[clause_id] = CA_NIL;
+				for (auto it_lit = beginOfClause(*pcl_ofs); *it_lit != SENTINEL_LIT; ++it_lit) {
+					if (variables_seen_[it_lit->var()] != CA_SEEN || var2Q_[it_lit->var()] != EXISTENTIAL) continue;
+					if (it_lit->sign()) {
+						if (--pos_var_seen_[it_lit->var()] == 0 && neg_var_seen_[it_lit->var()] != 0) pure_literal_stack_.push_back(it_lit->var());
+					}
+					else {
+						if (--neg_var_seen_[it_lit->var()] == 0 && pos_var_seen_[it_lit->var()] != 0) pure_literal_stack_.push_back(it_lit->var());
+					}
+				}
+			}
+			++pcl_ofs;
+		}
 	}
 }
 

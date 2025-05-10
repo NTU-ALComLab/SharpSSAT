@@ -12,6 +12,7 @@
 #include <cassert>
 
 #define MAX(A,B) (A > B) ? A : B
+#define MIN(A,B) (A < B) ? A : B
 class StackLevel {
   /// active Component, once initialized, it should not change
   const unsigned super_component_ = 0;
@@ -30,8 +31,9 @@ class StackLevel {
   double  path_prob_[2] = {1.0, 1.0}; // set lits prob
   double  dec_prob_ = 0; // active_branch = 0
   bool    isR_ = true;
+  bool    isU_ = false;
   bool    isInv_ = false;
-  Node*   node_ = NULL;
+  Node*   node_ = nullptr;
 
   /// remaining Components
 
@@ -93,6 +95,10 @@ public:
   bool needSecondBranch(){
     //NOTE in ssat if current branch prob=1 and isExist, no need to second branch
     if(isR_) return true;
+    if(isU_){
+      if( active_branch_==0 && (branch_sat_prob_[0]*path_prob_[0])==double(0) ) return false;
+      return true;
+    }
     if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(1) ) return false;    // on first exist branch, prob=1
     if( active_branch_==1 && ((branch_sat_prob_[0]*path_prob_[0]) >=
                               (branch_sat_prob_[1]*path_prob_[1])) ){                           // on second exist branch, existential early return
@@ -177,6 +183,10 @@ public:
     isR_ = r;
   }
 
+  void setIsDecUniver(bool r){
+    isU_ = r;
+  }
+
   void setDecProb(double p){
     dec_prob_ = p;
   }
@@ -188,6 +198,7 @@ public:
   double getTotalSatProb() const{
     // cout << super_component_ << " branch prob=" << 
     //         path_prob_[0]*branch_sat_prob_[0] << ", " << path_prob_[1]*branch_sat_prob_[1] << endl;
+    if(isU_) return MIN( path_prob_[0]*branch_sat_prob_[0], path_prob_[1]*branch_sat_prob_[1]);
     if(!isR_) return MAX( path_prob_[0]*branch_sat_prob_[0], path_prob_[1]*branch_sat_prob_[1]);
     return (dec_prob_*path_prob_[0]*branch_sat_prob_[0] + (1-dec_prob_)*path_prob_[1]*branch_sat_prob_[1]);
   }
@@ -200,8 +211,16 @@ public:
   // decision variable v
   // 0 for v' side, 1 for v side 
   bool maxProbBranch(){
-    assert(!isR_);
+    assert(!isR_ && !isU_);
     bool b = path_prob_[0]*branch_sat_prob_[0] < path_prob_[1]*branch_sat_prob_[1];
+    // cout << path_prob_[0]*branch_sat_prob_[0] << " " << path_prob_[1]*branch_sat_prob_[1] << endl;
+    // cout << b << endl;
+    return isInv_ ? (!b) : b;
+  }
+
+  bool minProbBranch(){
+    assert(isU_);
+    bool b = path_prob_[0]*branch_sat_prob_[0] >= path_prob_[1]*branch_sat_prob_[1];
     // cout << path_prob_[0]*branch_sat_prob_[0] << " " << path_prob_[1]*branch_sat_prob_[1] << endl;
     // cout << b << endl;
     return isInv_ ? (!b) : b;

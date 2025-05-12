@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     cout << "\t -p                      \t turn on pure literal detection" << endl;
     cout << "\t -c                      \t turn on pure component detection" << endl;
     cout << "\t -k                      \t turn on strategy generation"  << endl;
-    cout << "\t -e                      \t enable universal quatifiers"  << endl;
+    cout << "\t -u                      \t enable universal quatifiers"  << endl;
     cout << "\t -d [file]               \t turn on dec-DNNF writing"  << endl;
     cout << "\t -l                      \t turn on certficate generation"  << endl;
     cout << "\t" << endl;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
       SolverConfiguration::quiet = true;
     else if (strcmp(argv[i], "-verbose") == 0)
       theSolver.config().verbose = true;
-    else if (strcmp(argv[i], "-e") == 0)
+    else if (strcmp(argv[i], "-u") == 0)
       theSolver.config().include_forall = true;
     else if (strcmp(argv[i], "-t") == 0) {
       if (argc <= i + 1) {

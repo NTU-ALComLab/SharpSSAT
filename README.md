@@ -14,34 +14,18 @@ $ make
 
 For SSAT solving, run the command:
 ```
-$ SharpSSAT -s [options] [SDIMACS_File]`
+$ SharpSSAT -s [-p] [-k] [-d <NNF_Output>] [-l] [-u] <SDIMACS_File>
 ```
 
-Run `SharpSSAT` to see more options.
+* `<SDIMACS_File>`: The name of the input SSAT formula in `.sdimacs` format.
+* `-p`: Enables pure literal elimination. (optional)
+* `-k`: Enables witness generation. The witness (Skolem functions), written in a BLIF file, will be generated in the same directory as `<SDIMACS_File>`. (optional)
+* `-d <NNF_Output>`: Enables dec-DNNF generation and specifies the NNF output file. Cannot be used with the option `-u`. (optional)
+* `-l`: Enables certificate generation. Cannot be used with the option `-u`. (optional)
+* `-u`: Enables solving instances with universal quantifiers.  Cannot be used with the options `-d` and `-l`. When used with `-k`,  two strategy functions, written in separate BLIF files (`<SDIMACS_File>_exist.blif` for existential variables and `<SDIMACS_File>_univ.blif` for universal variables), will be generated in the same directory as `<SDIMACS_File>`. (optional)
 
+Run `SharpSSAT` to see more available options.
 
-To enable witness generation, run the command:
-```
-$ SharpSSAT -s -k [SDIMACS_File]`
-```
-then the witness (Skolem functions), written in a BLIF file, will be generated in the same directory as the SDIMACS_File.
-
-To enable dec-DNNF generation, run the command:
-```
-$ SharpSSAT -s -d [NNF_Output] [SDIMACS_File]`
-```
-
-To enable certificate generation, run the command:
-```
-$ SharpSSAT -s -l -p [SDIMACS_File]`
-```
-
-To enable solving instances with universal quantifiers, run the command:
-```
-$ SharpSSAT -s -e [SDIMACS_File]`
-```
-
-Witness generation (strategy extraction) can be enabled when solving instances with universal quantifiers. In such cases, two strategy functions will be generated in the same directory as the SDIMACS_File.
 
 ## Reference
 * [AAAI'23 paper](https://ojs.aaai.org/index.php/AAAI/article/view/25509):

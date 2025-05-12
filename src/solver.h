@@ -161,7 +161,7 @@ private:
   float scoreOf(VariableIndex v) {
     float score = 0;
     if (config_.vsads_freq){
-      score = component_analyzer_.scoreOf(v);
+      float score = component_analyzer_.scoreOf(v);
     }
     if (config_.vsads_act){
       score += 10.0*literal(LiteralID(v, true)).activity_score_;

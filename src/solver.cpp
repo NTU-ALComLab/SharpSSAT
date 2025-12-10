@@ -54,7 +54,7 @@ bool Solver::simplePreProcess() {
   if (succeeded && !config_.ssat_solving)
     succeeded &= prepFailedLiteralTest();
 
-  if (succeeded ){
+  if (succeeded){
     if (config_.ssat_solving){
       //FIXME
       double assert_prob_ = stack_.top().getCurPathProb();
@@ -62,7 +62,7 @@ bool Solver::simplePreProcess() {
       HardWireAndCompact();
       literal_values_ = lv;
       stack_.top().includePathProb(assert_prob_);
-      if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
+      if (config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
         stack_.top().getNode()->recordExistImplications(exist_imp_);
         stack_.top().getNode()->recordRandomImplications(random_imp_);
       }
@@ -70,7 +70,7 @@ bool Solver::simplePreProcess() {
     else
       HardWireAndCompact();
   }else{
-    if(config_.include_forall)
+    if (config_.ssat_solving && config_.strategy_generation && config_.include_forall)
       stack_.top().getNode()->recordUnivImplications(univ_imp_);
   }
   return succeeded;

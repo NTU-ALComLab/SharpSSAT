@@ -101,10 +101,10 @@ void Node::resetPreconditionCnt()
 // Count the actual number of preconditions univ_pre_: 1=univ strategy 0=exist strategy
 void Node::countPrecondition(bool univ_pre_, bool branch_eff)
 {
-    if (visited()){
-        if(branch_eff){
-            preCnt_++;
-        }
+    if(branch_eff){
+        preCnt_++;
+    }
+    if(getPreCnt() > 1){
         return;
     }
     if (type_ == RAND)
@@ -123,11 +123,9 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
         {
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
-        if(univ_pre_){
-            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-            {
-                descendants_[!b_][i]->countPrecondition(univ_pre_, false);
-            }
+        for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+        {
+            descendants_[!b_][i]->countPrecondition(univ_pre_, univ_pre_ && branch_eff);
         }
     }
     else if (type_ == UNIV)
@@ -136,11 +134,9 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
         {
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
-        if(!univ_pre_){
-            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-            {
-                descendants_[!b_][i]->countPrecondition(univ_pre_, false);
-            }
+        for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+        {
+            descendants_[!b_][i]->countPrecondition(univ_pre_, !univ_pre_ && branch_eff);
         }
     }
     else
@@ -148,10 +144,6 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
         for (size_t i = 0; i < descendants_[1].size(); ++i)
             descendants_[1][i]->countPrecondition(univ_pre_, branch_eff);
     }
-    if(branch_eff){
-        preCnt_++;
-    }
-    setVisited();
 }
 
 // debug
@@ -383,7 +375,6 @@ void Trace::writeExistStrategyToFile(ofstream &out)
 {   
     Node::resetGlobalVisited();
     source_->resetPreconditionCnt();
-    Node::resetGlobalVisited();
     source_->countPrecondition(false, true);
 
     // source_->printDescendants();
@@ -560,7 +551,6 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
 {
     Node::resetGlobalVisited();
     source_->resetPreconditionCnt();
-    Node::resetGlobalVisited();
     source_->countPrecondition(true, true);
     
     intermediateID = 0;

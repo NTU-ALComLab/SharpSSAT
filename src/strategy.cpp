@@ -73,6 +73,87 @@ void Node::removeSmallBranch()
     setVisited();
 }
 
+void Node::resetPreconditionCnt()
+{
+    if (visited())
+        return;
+    if (!descendants_[0].empty())
+    {
+        for (size_t i = 0; i < descendants_[0].size(); ++i)
+        {
+            assert(descendants_[0][i]);
+            descendants_[0][i]->resetPreconditionCnt();
+        }
+    }
+
+    if (!descendants_[1].empty())
+    {
+        for (size_t i = 0; i < descendants_[1].size(); ++i)
+        {
+            assert(descendants_[1][i]);
+            descendants_[1][i]->resetPreconditionCnt();
+        }
+    }
+    preCnt_ = 0;
+    setVisited();
+}
+
+// Count the actual number of preconditions univ_pre_: 1=univ strategy 0=exist strategy
+void Node::countPrecondition(bool univ_pre_, bool branch_eff)
+{
+    if (visited()){
+        if(branch_eff){
+            preCnt_++;
+        }
+        return;
+    }
+    if (type_ == RAND)
+    {
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < descendants_[i].size(); ++j)
+            {
+                descendants_[i][j]->countPrecondition(univ_pre_, branch_eff);
+            }
+        }
+    }
+    else if (type_ == EXIST)
+    {
+        for (size_t i = 0; i < descendants_[b_].size(); ++i)
+        {
+            descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
+        }
+        if(univ_pre_){
+            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+            {
+                descendants_[!b_][i]->countPrecondition(univ_pre_, false);
+            }
+        }
+    }
+    else if (type_ == UNIV)
+    {
+        for (size_t i = 0; i < descendants_[b_].size(); ++i)
+        {
+            descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
+        }
+        if(!univ_pre_){
+            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+            {
+                descendants_[!b_][i]->countPrecondition(univ_pre_, false);
+            }
+        }
+    }
+    else
+    { // DUMMY
+        for (size_t i = 0; i < descendants_[1].size(); ++i)
+            descendants_[1][i]->countPrecondition(univ_pre_, branch_eff);
+    }
+    if(branch_eff){
+        preCnt_++;
+    }
+    setVisited();
+}
+
 // debug
 void Node::printDescendants()
 {
@@ -299,7 +380,13 @@ void Trace::writeStrategyToFile(ofstream &out)
 }
 
 void Trace::writeExistStrategyToFile(ofstream &out)
-{
+{   
+    Node::resetGlobalVisited();
+    source_->resetPreconditionCnt();
+    Node::resetGlobalVisited();
+    source_->countPrecondition(false, true);
+
+    // source_->printDescendants();
     // topological order traversal and write strategy accordingly
     // use out.tellp() to get the size of current file
     intermediateID = 0;
@@ -376,7 +463,7 @@ void Trace::writeExistStrategyToFile(ofstream &out)
                 }
                 else
                     info_map[d[i]].second.push_back(wire);
-                if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                     node_q.push(d[i]);
             }
         }
@@ -418,7 +505,7 @@ void Trace::writeExistStrategyToFile(ofstream &out)
                     }
                     else
                         info_map[d[i]].second.push_back(w_new[k]);
-                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
                 }
             }
@@ -460,7 +547,7 @@ void Trace::writeExistStrategyToFile(ofstream &out)
                     }
                     else
                         info_map[d[i]].second.push_back(w_new[k]);
-                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
                 }
             }
@@ -471,6 +558,11 @@ void Trace::writeExistStrategyToFile(ofstream &out)
 
 void Trace::writeUnivStrategyToFile(ofstream &out)
 {
+    Node::resetGlobalVisited();
+    source_->resetPreconditionCnt();
+    Node::resetGlobalVisited();
+    source_->countPrecondition(true, true);
+    
     intermediateID = 0;
     unordered_map<Node *, WireInfo> info_map;
     queue<Node *> node_q;
@@ -545,7 +637,7 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
                 }
                 else
                     info_map[d[i]].second.push_back(wire);
-                if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                     node_q.push(d[i]);
             }
         }
@@ -587,7 +679,7 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
                     }
                     else
                         info_map[d[i]].second.push_back(w_new[k]);
-                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
                 }
             }
@@ -629,7 +721,7 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
                     }
                     else
                         info_map[d[i]].second.push_back(w_new[k]);
-                    if (d[i]->getRefCnt() == info_map[d[i]].second.size())
+                    if (d[i]->getPreCnt() == info_map[d[i]].second.size())
                         node_q.push(d[i]);
                 }
             }

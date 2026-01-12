@@ -126,6 +126,10 @@ public:
 
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
+    void resetPreconditionCnt();
+    void countPrecondition(bool univ_pre_, bool branch_eff);
+    unsigned getPreCnt() { return preCnt_; }
+
     bool empty( bool isCertGen=false ) const{
         if (isCertGen)
             return descendants_[curBranch_].empty();
@@ -138,6 +142,7 @@ public:
 private: 
     void increaseRefCnt(){ ++refCnt_; }
     void decreaseRefCnt(){ assert(refCnt_!=0); --refCnt_; }
+    void increasePreCnt(){ ++preCnt_; }
     void setDNNFId( int id ){ 
         assert( !visited() );
         assert( id >0 );
@@ -162,6 +167,7 @@ private:
     vector<int>     pureLits_[2];   // pure literals
     bool            hasEarlyReturn_ = false;
     bool            prunedBranch_;
+    unsigned        preCnt_;        //number of preconditions in SSAT-dual
 
 
     // debug data member;

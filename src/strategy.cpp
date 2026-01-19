@@ -103,6 +103,8 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
 {
     if(branch_eff){
         preCnt_++;
+    }else{
+        return;
     }
     if(getPreCnt() > 1){
         return;
@@ -124,8 +126,10 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
         for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-        {
-            descendants_[!b_][i]->countPrecondition(univ_pre_, univ_pre_ && branch_eff);
+        {   
+            if(univ_pre_){
+                descendants_[!b_][i]->countPrecondition(univ_pre_, univ_pre_ && branch_eff);
+            }
         }
     }
     else if (type_ == UNIV)
@@ -135,8 +139,10 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
         for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-        {
-            descendants_[!b_][i]->countPrecondition(univ_pre_, !univ_pre_ && branch_eff);
+        {   
+            if(!univ_pre_){
+                descendants_[!b_][i]->countPrecondition(univ_pre_, !univ_pre_ && branch_eff);
+            }
         }
     }
     else
@@ -377,6 +383,8 @@ void Trace::writeExistStrategyToFile(ofstream &out)
     source_->resetPreconditionCnt();
     source_->countPrecondition(false, true);
 
+    // cout << "Start treversing trace" << endl;
+
     // source_->printDescendants();
     // topological order traversal and write strategy accordingly
     // use out.tellp() to get the size of current file
@@ -552,6 +560,8 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
     Node::resetGlobalVisited();
     source_->resetPreconditionCnt();
     source_->countPrecondition(true, true);
+
+    // cout << "Start treversing trace" << endl;
     
     intermediateID = 0;
     unordered_map<Node *, WireInfo> info_map;

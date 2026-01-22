@@ -125,9 +125,10 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
         {
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
-        for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-        {   
-            if(univ_pre_){
+        if(univ_pre_)
+        {
+            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+            {   
                 descendants_[!b_][i]->countPrecondition(univ_pre_, univ_pre_ && branch_eff);
             }
         }
@@ -138,9 +139,10 @@ void Node::countPrecondition(bool univ_pre_, bool branch_eff)
         {
             descendants_[b_][i]->countPrecondition(univ_pre_, branch_eff);
         }
-        for (size_t i = 0; i < descendants_[!b_].size(); ++i)
-        {   
-            if(!univ_pre_){
+        if(!univ_pre_)
+        {
+            for (size_t i = 0; i < descendants_[!b_].size(); ++i)
+            {   
                 descendants_[!b_][i]->countPrecondition(univ_pre_, !univ_pre_ && branch_eff);
             }
         }
@@ -385,6 +387,7 @@ void Trace::writeExistStrategyToFile(ofstream &out)
 
     // cout << "Start treversing trace" << endl;
 
+    // Node::resetGlobalVisited();
     // source_->printDescendants();
     // topological order traversal and write strategy accordingly
     // use out.tellp() to get the size of current file
@@ -416,7 +419,7 @@ void Trace::writeExistStrategyToFile(ofstream &out)
         assert(info_map.find(d[i]) == info_map.end());
         info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
         if (d[i] == constants_[0] || d[i] == constants_[1]) continue;
-        assert(d[i]->getRefCnt() == info_map[d[i]].second.size());
+        assert(d[i]->getPreCnt() == info_map[d[i]].second.size());
         node_q.push(d[i]);
     }
 
@@ -591,7 +594,7 @@ void Trace::writeUnivStrategyToFile(ofstream &out)
         assert(info_map.find(d[i]) == info_map.end());
         info_map[d[i]] = WireInfo(intermediateID, vector<size_t>(1, info_map[source_].first));
         if (d[i] == constants_[0] || d[i] == constants_[1]) continue;
-        assert(d[i]->getRefCnt() == info_map[d[i]].second.size());
+        assert(d[i]->getPreCnt() == info_map[d[i]].second.size());
         node_q.push(d[i]);
     }
 

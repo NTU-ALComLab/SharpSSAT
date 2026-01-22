@@ -54,7 +54,7 @@ public:
     }
     void markMinBranch(bool b){ 
         assert(type_==UNIV);
-        // cout << "Mark MaxBranch for " << decVar_ << " " << b << endl; 
+        // cout << "Mark MinBranch for " << decVar_ << " " << b << endl; 
         b_ = b; 
     }
     void changeBranch(){ curBranch_ = !curBranch_; }
@@ -103,6 +103,10 @@ public:
 
     void recordUnivImplications(vector<int>& imp){
         univImp_[curBranch_] = imp;
+    }
+
+    void cummulateUnivImplications(vector<int>& imp){
+        univImp_[curBranch_].insert(univImp_[curBranch_].end(), imp.begin(), imp.end());
     }
 
     void addUnivImplication(int imp){

@@ -460,6 +460,7 @@ bool Solver::ssatDecideLiteral() {
     stack_.top().setNode(n);
   }
   // cout << "Decide " << theLit.toInt() << endl;
+  // cout << "Node count: " << trace_->numNodes() << endl;
 
   return true;
   assert(
@@ -473,10 +474,13 @@ retStateT Solver::backtrack() {
     if (stack_.top().branch_found_unsat()){
       component_analyzer_.removeAllCachePollutionsOf(stack_.top());
       if(config_.strategy_generation || config_.compile_DNNF || config_.certificate_generation){
-        Node* n = stack_.top().getNode();
-        assert(n);
-        n->removeAllDescendants(n->getCurrentBranch());
-        n->addDescendant(trace_->getConstant(0));
+        if(!config_.include_forall){
+          // only remove descendents if universal strategies aren't needed
+          Node* n = stack_.top().getNode();
+          assert(n);
+          n->removeAllDescendants(n->getCurrentBranch());
+          n->addDescendant(trace_->getConstant(0));
+        }
       }
     }
     else if (stack_.top().anotherCompProcessible())
@@ -633,6 +637,12 @@ bool Solver::bcp() {
           exist_imp_.push_back(lit.toInt());
         else if(qType(lit)==UNIVERSAL){
           univ_imp_.push_back(lit.neg().toInt());
+          // Node* n = stack_.top().getNode();
+          // n->addDescendant(trace_->getConstant(0));
+          // n->cummulateUnivImplications(univ_imp_);
+          // cout << "find universal unit clause" << endl;
+          // setConflictState(lit);
+          // return false;
         }
         else{
             assert(qType(lit) == RANDOM);
@@ -679,9 +689,10 @@ bool Solver::bcp() {
       n->recordRandomImplications(random_imp_);
     }
     else{
-        n->addDescendant(trace_->getConstant(0));
-        if(config_.include_forall)
+        // n->addDescendant(trace_->getConstant(0));
+        if(config_.include_forall){
           n->recordUnivImplications(univ_imp_);
+        }
     }
   }
 
@@ -1279,6 +1290,7 @@ void Solver::generateExistStrategy(const string& output_file){
   ofstream out(output_file);
   initializeExistBLIF(out);
   trace_->writeExistStrategyToFile(out);
+  // cout << "End treversing trace" << endl;
   finalizeExistBLIF(out);
   out.close();
 }
@@ -1288,6 +1300,7 @@ void Solver::generateUnivStrategy(const string& output_file){
   ofstream out(output_file);
   initializeUnivBLIF(out);
   trace_->writeUnivStrategyToFile(out);
+  // cout << "End treversing trace" << endl;
   finalizeUnivBLIF(out);
   out.close();
 }

@@ -30,7 +30,11 @@ bool Solver::simplePreProcess() {
 //BEGIN process unit clauses
   for (auto lit : unit_clauses_){
     if(qType(lit)==UNIVERSAL){
-      univ_imp_.push_back(lit.neg().toInt());
+      if(config_.strategy_generation){
+        univ_imp_.push_back(lit.neg().toInt());
+        initTrace();
+        stack_.back().getNode()->recordUnivImplications(univ_imp_);
+      }
       return false;
     }
     setLiteralIfFree(lit);

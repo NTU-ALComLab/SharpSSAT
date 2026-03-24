@@ -162,6 +162,9 @@ void Node::printDescendants()
     if (type_ == EXIST)
     {
         cout << this << "\tMaxBr=" << decVar_ << (b_ ? "" : "'") << endl;
+    }else if(type_ == UNIV)
+    {
+        cout << this << "\tMinBr=" << decVar_ << (b_ ? "" : "'") << endl;
     }
     if (!descendants_[0].empty())
     {
@@ -252,6 +255,7 @@ void Trace::writeStrategyToFile(ofstream &out)
     cout << "# nodes \t" << Node::nodeCnt_ << endl;
     cout << "# edges \t" << Node::edgeCnt_ << endl;
 
+    // Node::resetGlobalVisited();
     // source_->printDescendants();
 
     // topological order traversal and write strategy accordingly

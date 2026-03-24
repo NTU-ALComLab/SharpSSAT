@@ -644,9 +644,7 @@ bool Solver::bcp() {
           univ_imp_.push_back(lit.neg().toInt());
           // Node* n = stack_.top().getNode();
           // n->addDescendant(trace_->getConstant(0));
-          // n->cummulateUnivImplications(univ_imp_);
           // cout << "find universal unit clause" << endl;
-          // setConflictState(lit);
           // return false;
         }
         else{

@@ -463,9 +463,9 @@ bool Solver::ssatDecideLiteral() {
     n->setDecVar(theLit.var(), qType(theLit)==RANDOM, qType(theLit)==UNIVERSAL, theLit.sign());
     stack_.top().setNode(n);
   }
-  cout << "Decide " << theLit.toInt() << endl;
-  cout << "Node count: " << trace_->numNodes() << endl;
-  cout << "Decision level: " << stack_.get_decision_level() << endl;
+  // cout << "Decide " << theLit.toInt() << endl;
+  // cout << "Node count: " << trace_->numNodes() << endl;
+  // cout << "Decision level: " << stack_.get_decision_level() << endl;
 
   return true;
   assert(
@@ -718,10 +718,6 @@ bool Solver::BCP(unsigned start_at_stack_ofs) {
       if (isActive(*bt) && qType(*bt) == UNIVERSAL) {
         if (config_.strategy_generation)
           univ_imp_.push_back(bt->neg().toInt());
-        // var(*bt).decision_level = stack_.get_decision_level();
-        // var(*bt).ante = Antecedent(unLit);
-        // cout << var(*bt).decision_level << endl;
-        // var(*bt).decision_level = 0;
         setConflictState(unLit, *bt);
         return false;
       }
@@ -861,7 +857,6 @@ void Solver::minimizeAndStoreUIPClause(LiteralID uipLit,
   clause.clear();
   assertion_level_ = -1;
   for (auto lit : tmp_clause) {
-    // cout << lit.toInt() << endl;
     if (existsUnitClauseOf(lit.var()))
       continue;
     bool resolve_out = false;
@@ -893,11 +888,6 @@ void Solver::minimizeAndStoreUIPClause(LiteralID uipLit,
 
   clause.push_front(uipLit);
   uip_clauses_.push_back(vector<LiteralID>(clause.begin(), clause.end()));
-
-  for(auto lit : clause){
-    cout << lit.toInt() << endl;
-  }
-  cout << endl;
 }
 
 void Solver::recordLastUIPCauses() {

@@ -220,7 +220,7 @@ public:
 
   bool minProbBranch(){
     assert(isU_);
-    bool b = path_prob_[0]*branch_sat_prob_[0] >= path_prob_[1]*branch_sat_prob_[1];
+    bool b = path_prob_[0]*branch_sat_prob_[0] > path_prob_[1]*branch_sat_prob_[1];
     // cout << path_prob_[0]*branch_sat_prob_[0] << " " << path_prob_[1]*branch_sat_prob_[1] << endl;
     // cout << b << endl;
     return isInv_ ? (!b) : b;

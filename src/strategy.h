@@ -54,7 +54,7 @@ public:
     }
     void markMinBranch(bool b){ 
         assert(type_==UNIV);
-        // cout << "Mark MaxBranch for " << decVar_ << " " << b << endl; 
+        // cout << "Mark MinBranch for " << decVar_ << " " << b << endl; 
         b_ = b; 
     }
     void changeBranch(){ curBranch_ = !curBranch_; }
@@ -105,6 +105,10 @@ public:
         univImp_[curBranch_] = imp;
     }
 
+    void cummulateUnivImplications(vector<int>& imp){
+        univImp_[curBranch_].insert(univImp_[curBranch_].end(), imp.begin(), imp.end());
+    }
+
     void addUnivImplication(int imp){
         univImp_[curBranch_].push_back(imp);
     }
@@ -126,6 +130,10 @@ public:
 
     static void resetGlobalVisited(){ Node::globalVisited_++;}
 
+    void resetPreconditionCnt();
+    void countPrecondition(bool univ_pre_, bool branch_eff);
+    unsigned getPreCnt() { return preCnt_; }
+
     bool empty( bool isCertGen=false ) const{
         if (isCertGen)
             return descendants_[curBranch_].empty();
@@ -138,6 +146,7 @@ public:
 private: 
     void increaseRefCnt(){ ++refCnt_; }
     void decreaseRefCnt(){ assert(refCnt_!=0); --refCnt_; }
+    void increasePreCnt(){ ++preCnt_; }
     void setDNNFId( int id ){ 
         assert( !visited() );
         assert( id >0 );
@@ -162,6 +171,7 @@ private:
     vector<int>     pureLits_[2];   // pure literals
     bool            hasEarlyReturn_ = false;
     bool            prunedBranch_;
+    unsigned        preCnt_;        //number of preconditions in SSAT-dual
 
 
     // debug data member;

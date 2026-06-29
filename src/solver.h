@@ -8,6 +8,8 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 
+#include <cstdint>
+
 #include "strategy.h"
 #include "basic_types.h"
 #include "instance.h"
@@ -53,10 +55,8 @@ struct SolverState {
 };
 
 
-
-
-
-class Solver: public Instance {
+template <typename TProb>
+class Solver: public Instance<TProb> {
 public:
   Solver() {
     stopwatch_.setTimeBound(config_.time_bound_seconds);
@@ -72,6 +72,9 @@ public:
   void generateUnivStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
   void generateCertificate(const string & up, const string & low, const string & prob);
+  #ifdef DEBUG_TRACE
+    void printTrace() { trace_->printTrace(); }
+  #endif
 
   SolverConfiguration &config() {
     return config_;
@@ -80,20 +83,17 @@ public:
   void setTimeBound(long int i) {
     stopwatch_.setTimeBound(i);
   }
-  void setDNNFName(const string& s) {
-    DNNF_filename_ = s;
-  }
 
 private:
   SolverState state_;
   SolverConfiguration config_;
 
-  DecisionStack stack_; // decision stack
+  DecisionStack<TProb> stack_; // decision stack
   vector<LiteralID> literal_stack_;
 
   StopWatch stopwatch_;
 
-  ComponentAnalyzer component_analyzer_ = ComponentAnalyzer(config_,statistics_,literal_values_);
+  ComponentAnalyzer<TProb> component_analyzer_ = ComponentAnalyzer<TProb>(config_,this->statistics_,this->literal_values_);
 
   // vector<double> td_score_;
 
@@ -107,7 +107,6 @@ private:
   vector<int>   exist_imp_;     // temp vec holding exist implication literals
   vector<int>   univ_imp_;      // temp vec holding universal implication literals
   vector<int>   random_imp_;    // temp vec holding random implication literals
-  string        DNNF_filename_; // output dec-DNNF filname
 
   bool simplePreProcess();
   bool prepFailedLiteralTest();
@@ -126,7 +125,7 @@ private:
   bool bcp();
 
   ///  this method performs Failed literal tests online
-  bool implicitBCP();
+  // bool implicitBCP();
 
   // this is the actual BCP algorithm
   // starts propagating all literal in literal_stack_
@@ -161,11 +160,11 @@ private:
   float scoreOf(VariableIndex v) {
     float score = 0;
     if (config_.vsads_freq){
-      float score = component_analyzer_.scoreOf(v);
+      score = component_analyzer_.scoreOf(v);
     }
     if (config_.vsads_act){
-      score += 10.0*literal(LiteralID(v, true)).activity_score_;
-      score += 10.0*literal(LiteralID(v, false)).activity_score_;
+      score += 10.0 * this->literal(LiteralID(v, true)).activity_score_;
+      score += 10.0 * this->literal(LiteralID(v, false)).activity_score_;
     }
 
     return score;
@@ -173,19 +172,23 @@ private:
 
   bool setLiteralIfFree(LiteralID lit,
       Antecedent ant = Antecedent(NOT_A_CLAUSE)) {
-    if (literal_values_[lit] != X_TRI)
+    assert(this->var(lit).component_level == stack_.get_decision_level());
+    if (this->literal_values_[lit] != X_TRI)
       return false;
-    var(lit).decision_level = stack_.get_decision_level();
-    var(lit).ante = ant;
+    this->var(lit).decision_level = stack_.get_decision_level();
+    this->var(lit).ante = ant;
     literal_stack_.push_back(lit);
     if (ant.isAClause() && ant.asCl() != NOT_A_CLAUSE)
-      getHeaderOf(ant.asCl()).increaseActivity();
-    literal_values_[lit] = T_TRI;
-    literal_values_[lit.neg()] = F_TRI;
+      this->getHeaderOf(ant.asCl()).increaseActivity();
+    this->literal_values_[lit] = T_TRI;
+    this->literal_values_[lit.neg()] = F_TRI;
     return true;
   }
   bool repeatedPureLiteral(LiteralID lit){
-    return var(lit).decision_level == stack_.get_decision_level() && var(lit).ante.asCl() == NOT_A_CLAUSE && literal_values_[lit] == T_TRI && literal_values_[lit.neg()] == F_TRI;
+    return this->var(lit).decision_level == stack_.get_decision_level()
+        && this->var(lit).ante.asCl() == NOT_A_CLAUSE
+        && this->literal_values_[lit] == T_TRI
+        && this->literal_values_[lit.neg()] == F_TRI;
   }
 
   void setPureLiteralsOnTrace()
@@ -213,9 +216,9 @@ private:
     state_.name = STATE_CONFLICT;
   }
   void setConflictState(ClauseOfs cl_ofs) {
-    getHeaderOf(cl_ofs).increaseActivity();
+    this->getHeaderOf(cl_ofs).increaseActivity();
     state_.violated_clause.clear();
-    for (auto it = beginOf(cl_ofs); *it != SENTINEL_LIT; it++)
+    for (auto it = this->beginOf(cl_ofs); *it != SENTINEL_LIT; it++)
       state_.violated_clause.push_back(*it);
     state_.name = STATE_CONFLICT;
   }
@@ -236,7 +239,7 @@ private:
     literal_stack_.clear();
     literal_stack_.reserve(resSize);
     // initialize the stack to contain at least level zero
-    stack_.push_back(StackLevel(1, 0, 2));
+    stack_.push_back(StackLevel<TProb>(1, 0, 2));
     stack_.back().changeBranch();
   }
 
@@ -260,7 +263,7 @@ private:
   // reset implication here
   void reactivateTOS() {
     for (auto it = TOSLiteralsBegin(); it != literal_stack_.end(); it++)
-      unSet(*it);
+      this->unSet(*it);
     component_analyzer_.cleanRemainingComponentsOf(stack_.top());
     literal_stack_.resize(stack_.top().literal_stack_ofs());
     stack_.top().resetRemainingComps();
@@ -286,7 +289,7 @@ private:
   // before) then assertionLevel_ == DL;
   int assertion_level_ = 0;
 
-  double assert_prob_ = 1; // level 0 implication
+  TProb assert_prob_ = 1; // level 0 implication
   // build conflict clauses from most recent conflict
   // as stored in state_.violated_clause
   // solver state must be CONFLICT to work;
@@ -294,10 +297,10 @@ private:
   // so as to create clause that asserts the current decision
   // literal
   void recordLastUIPCauses();
-  void recordAllUIPCauses();
+  // void recordAllUIPCauses();
 
   void minimizeAndStoreUIPClause(LiteralID uipLit,
-      vector<LiteralID> & tmp_clause, bool seen[]);
+      vector<LiteralID> & tmp_clause, uint8_t seen[]);
   void storeUIPClause(LiteralID uipLit, vector<LiteralID> & tmp_clause);
   int getAssertionLevel() const {
     return assertion_level_;

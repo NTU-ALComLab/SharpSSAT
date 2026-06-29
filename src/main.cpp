@@ -22,92 +22,115 @@
 
 using namespace std;
 
+
+template <typename T_Prob>
+int run_solver(SolverConfiguration& config, const string& input_file);
+
+
 int main(int argc, char *argv[]) {
-
-  string input_file;
-  Solver theSolver;
-
   if (argc <= 1) {
-    cout << "Usage: SharpSSAT [options] [SDIMACS_File]" << endl;
-    cout << "Options: " << endl;
-    // cout << "\t -noPP  \t turn off preprocessing" << endl;
-    //cout << "\t -noNCB \t turn off nonchronological backtracking" << endl;
-    cout << "\t -q                      \t quiet mode" << endl;
-    cout << "\t -t [s]                  \t set time bound to s seconds" << endl;
-    cout << "\t -noCC                   \t turn off component caching" << endl;
-    cout << "\t -noCL                   \t turn off clause learning" << endl;
-    cout << "\t -cs [n]                 \t set max cache size to n MB" << endl;
-    cout << "\t -s                      \t ssat solving" << endl;
-    cout << "\t -p                      \t turn on pure literal detection" << endl;
-    cout << "\t -c                      \t turn on pure component detection" << endl;
-    cout << "\t -k                      \t turn on strategy generation"  << endl;
-    cout << "\t -u                      \t enable universal quatifiers"  << endl;
-    cout << "\t -d [file]               \t turn on dec-DNNF writing"  << endl;
-    cout << "\t -l                      \t turn on certficate generation"  << endl;
-    cout << "\t" << endl;
+    cout << "usage: SharpSSAT [options] SDIMACS_File" << endl;
+    cout << "options: " << endl;
+    // cout << "  -noPP  \t turn off preprocessing" << endl;
+    // cout << "  -noNCB \t turn off nonchronological backtracking" << endl;
+    cout << "  -q       \t quiet mode" << endl;
+    cout << "  -t [s]   \t set time bound to s seconds" << endl;
+    cout << "  -noCC    \t turn off component caching" << endl;
+    cout << "  -noCL    \t turn off clause learning" << endl;
+    cout << "  -cs [n]  \t set max cache size to n MB" << endl;
+    cout << "  -s       \t ssat solving" << endl;
+    cout << "  -p       \t turn on pure literal detection" << endl;
+    cout << "  -c       \t turn on pure component detection" << endl;
+    cout << "  -k       \t turn on strategy generation"  << endl;
+    cout << "  -u       \t enable universal quatifiers"  << endl;
+    cout << "  -d [file]\t turn on dec-DNNF writing"  << endl;
+    cout << "  -l       \t turn on certficate generation"  << endl;
+    cout << "  -mp      \t use mpq rational number" << endl;
 
     return -1;
   }
 
+  string input_file;
+  SolverConfiguration config;
+  bool use_mpq = false;
+
   for (int i = 1; i < argc; i++) {
-//    if (strcmp(argv[i], "-noNCB") == 0)
-//      theSolver.config().perform_non_chron_back_track = false;
+    // if (strcmp(argv[i], "-noNCB") == 0)
+    //   config.perform_non_chron_back_track = false;
     if ( strcmp(argv[i], "-k")==0 )
-      theSolver.config().strategy_generation = true;
+      config.strategy_generation = true;
     else if ( strcmp(argv[i], "-l")==0 )
-        theSolver.config().certificate_generation = true;
+      config.certificate_generation = true;
     else if ( strcmp(argv[i], "-d")==0 ) {
-        theSolver.config().compile_DNNF = true;
-        if (argc <= i + 1) {
+      config.compile_DNNF = true;
+      if (argc <= i + 1) {
         cout << " wrong parameters" << endl;
         return -1;
       }
-      theSolver.setDNNFName(argv[i + 1]);
+      config.DNNF_filename = argv[i + 1];
       ++i;
     }
     if ( strcmp(argv[i], "-c")==0 )
-      theSolver.config().perform_pure_component = true;
+      config.perform_pure_component = true;
     if ( strcmp(argv[i], "-p")==0 )
-      theSolver.config().perform_pure_literal = true;
+      config.perform_pure_literal = true;
     if ( strcmp(argv[i], "-s")==0 )
-      theSolver.config().ssat_solving = true;
+      config.ssat_solving = true;
+    if (strcmp(argv[i], "-mp") == 0)
+      use_mpq = true;
     if (strcmp(argv[i], "-noCC") == 0)
-      theSolver.config().perform_component_caching = false;
+      config.perform_component_caching = false;
     if (strcmp(argv[i], "-noCL") == 0)
-      theSolver.config().perform_clause_learning= false;
+      config.perform_clause_learning= false;
     else if (strcmp(argv[i], "-q") == 0)
       SolverConfiguration::quiet = true;
     else if (strcmp(argv[i], "-verbose") == 0)
-      theSolver.config().verbose = true;
+      config.verbose = true;
     else if (strcmp(argv[i], "-u") == 0)
-      theSolver.config().include_forall = true;
+      config.include_forall = true;
     else if (strcmp(argv[i], "-t") == 0) {
       if (argc <= i + 1) {
         cout << " wrong parameters" << endl;
         return -1;
       }
-      theSolver.config().time_bound_seconds = atol(argv[i + 1]);
-      if (theSolver.config().verbose)
-        cout << "time bound set to" << theSolver.config().time_bound_seconds << "s\n";
+      config.time_bound_seconds = atol(argv[i + 1]);
+      if (config.verbose)
+        cout << "time bound set to" << config.time_bound_seconds << "s\n";
     }
     else if (strcmp(argv[i], "-cs") == 0) {
       if (argc <= i + 1) {
         cout << " wrong parameters" << endl;
         return -1;
       }
-      theSolver.config().maximum_cache_size_bytes = atol(argv[i + 1]) * 1000000;
+      config.maximum_cache_size_bytes = atol(argv[i + 1]) * 1000000;
     }
     else
       input_file = argv[i];
   }
 
-  if (theSolver.config().include_forall
-    && (theSolver.config().certificate_generation || theSolver.config().compile_DNNF)) {
+  if (config.include_forall && (config.certificate_generation || config.compile_DNNF)) {
     cout << "Knowledge compilation with universal quantifiers is not supported at the moment" << endl;
     return -1;
   }
+
+  if (use_mpq) {
+    return run_solver<mpq_class>(config, input_file);
+  }
+  else {
+    return run_solver<double>(config, input_file);
+  }
+}
+
+
+template <typename T_Prob>
+int run_solver(SolverConfiguration& config, const string& input_file) {
+  Solver<T_Prob> theSolver;
+  theSolver.config() = config;
   if (!theSolver.solve(input_file)) return -1;
   if(theSolver.config().strategy_generation){
+    #ifdef DEBUG_TRACE
+      theSolver.printTrace();
+    #endif
     if(theSolver.config().include_forall){
       string output_file_exist = regex_replace(input_file, regex("[.]sdimacs"), "_exist.blif");
       cout << "existential strategy written to " << output_file_exist << endl;

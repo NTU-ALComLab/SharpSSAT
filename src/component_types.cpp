@@ -7,35 +7,23 @@
 
 #include "component_types.h"
 
-unsigned DiffPackedComponent::_bits_per_clause = 0;
-unsigned DiffPackedComponent::_bits_per_variable = 0; // bitsperentry
-unsigned DiffPackedComponent::_variable_mask = 0;
-unsigned DiffPackedComponent::_clause_mask = 0; // bitsperentry
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_bits_per_clause = 0;
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_bits_per_variable = 0; // bitsperentry
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_variable_mask = 0;
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_clause_mask = 0; // bitsperentry
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_debug_static_val = 0;
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_bits_of_data_size = 0;
+template <typename TProb>
+unsigned BasePackedComponent<TProb>::_data_size_mask = 0;
 
-void DiffPackedComponent::adjustPackSize(unsigned int maxVarId,
-    unsigned int maxClId) {
-  _bits_per_variable = (unsigned int) ceil(
-      log((double) maxVarId + 1) / log(2.0));
-  _bits_per_clause = (unsigned int) ceil(log((double) maxClId + 1) / log(2.0));
-
-  _variable_mask = _clause_mask = 0;
-  for (unsigned int i = 0; i < _bits_per_variable; i++)
-    _variable_mask = (_variable_mask << 1) + 1;
-  for (unsigned int i = 0; i < _bits_per_clause; i++)
-    _clause_mask = (_clause_mask << 1) + 1;
-}
-
-
-unsigned BasePackedComponent::_bits_per_clause = 0;
-unsigned BasePackedComponent::_bits_per_variable = 0; // bitsperentry
-unsigned BasePackedComponent::_variable_mask = 0;
-unsigned BasePackedComponent::_clause_mask = 0; // bitsperentry
-unsigned BasePackedComponent::_debug_static_val=0;
-unsigned BasePackedComponent::_bits_of_data_size=0;
-unsigned BasePackedComponent::_data_size_mask = 0;
-
-
-void BasePackedComponent::adjustPackSize(unsigned int maxVarId,
+template <typename TProb>
+void BasePackedComponent<TProb>::adjustPackSize(unsigned int maxVarId,
     unsigned int maxClId) {
 
   _bits_per_variable = log2(maxVarId) + 1;
@@ -51,3 +39,8 @@ void BasePackedComponent::adjustPackSize(unsigned int maxVarId,
   for (unsigned int i = 0; i < _bits_of_data_size; i++)
     _data_size_mask = (_data_size_mask << 1) + 1;
 }
+
+template class BasePackedComponent<double>;
+template class BasePackedComponent<mpq_class>;
+template class CachedComponent<double>;
+template class CachedComponent<mpq_class>;

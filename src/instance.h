@@ -20,6 +20,7 @@ typedef vector<uint>               Vars;
 typedef pair<QType,Vars>           QLevel;
 typedef vector<QLevel>             Prefix;
 
+template <typename TProb>
 class Instance {
 protected:
 
@@ -50,19 +51,19 @@ protected:
         & occurrence_lists_[lit.neg()].empty();
   }
 
-  int qlev(LiteralID lit){
+  int qlev(LiteralID lit) const {
     return var2Lev_[lit.var()];
   }
 
-  int qlev(VariableIndex v){
+  int qlev(VariableIndex v) const {
     return var2Lev_[v];
   }
 
-  QType qType(LiteralID lit){
+  QType qType(LiteralID lit) const {
     return var2Q_[lit.var()];
   }
 
-  double prob(LiteralID lit){
+  TProb prob(LiteralID lit) const {
     if (var2Prob_[lit.var()]==-1) {
       if (var2Q_[lit.var()]==EXISTENTIAL) {
         return 1;
@@ -109,7 +110,7 @@ protected:
   bool createfromFile(const string &file_name);
 
 
-  DataAndStatistics statistics_;
+  DataAndStatistics<TProb> statistics_;
 
   /** literal_pool_: the literals of all clauses are stored here
    *   INVARIANT: first and last entries of literal_pool_ are a SENTINEL_LIT
@@ -136,7 +137,7 @@ protected:
   // begin ssat & wmc
   Prefix          prefix_;
   FType           f_type_;
-  vector<double>  var2Prob_; // -1 for indicator variable (only occurs in WMC)
+  vector<TProb>   var2Prob_; // -1 for indicator variable (only occurs in WMC)
   vector<QType>   var2Q_;
   vector<int>     var2Lev_;
   vector<size_t>  orderedVar_; // ordered var follows the prefix, used when certification
@@ -241,8 +242,8 @@ protected:
 };
 
 
-
-ClauseIndex Instance::addClause(vector<LiteralID> &literals) {
+template <typename TProb>
+ClauseIndex Instance<TProb>::addClause(vector<LiteralID> &literals) {
   // FIXME enable for model counting
   if (literals.size() == 1) {
     //TODO Deal properly with the situation that opposing unit clauses are learned
@@ -270,8 +271,8 @@ ClauseIndex Instance::addClause(vector<LiteralID> &literals) {
   return cl_ofs;
 }
 
-
-Antecedent Instance::addUIPConflictClause(vector<LiteralID> &literals) {
+template <typename TProb>
+Antecedent Instance<TProb>::addUIPConflictClause(vector<LiteralID> &literals) {
     Antecedent ante(NOT_A_CLAUSE);
     statistics_.num_clauses_learned_++;
     ClauseOfs cl_ofs = addClause(literals);
@@ -287,7 +288,8 @@ Antecedent Instance::addUIPConflictClause(vector<LiteralID> &literals) {
     return ante;
   }
 
-bool Instance::addBinaryClause(LiteralID litA, LiteralID litB) {
+template <typename TProb>
+bool Instance<TProb>::addBinaryClause(LiteralID litA, LiteralID litB) {
    if (literal(litA).hasBinaryLinkTo(litB))
      return false;
    literal(litA).addBinLinkTo(litB);

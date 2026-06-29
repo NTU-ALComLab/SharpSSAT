@@ -12,16 +12,19 @@
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h> 
-ComponentCache::ComponentCache(SolverConfiguration &conf,
-		DataAndStatistics &statistics) :
+
+template <typename TProb>
+ComponentCache<TProb>::ComponentCache(SolverConfiguration &conf,
+		DataAndStatistics<TProb> &statistics) :
 		config_(conf), statistics_(statistics) {
 }
 
-void ComponentCache::init() {
+template <typename TProb>
+void ComponentCache<TProb>::init() {
 	table_.clear();
 	entry_base_.clear();
 	entry_base_.reserve(2000000);
-	entry_base_.push_back(new CachedComponent()); // dummy Element
+	entry_base_.push_back(new CachedComponent<TProb>()); // dummy Element
 	table_.resize(900001, NULL);
 	free_entry_base_slots_.clear();
 	free_entry_base_slots_.reserve(10000);
@@ -48,7 +51,8 @@ void ComponentCache::init() {
 	recompute_bytes_memory_usage();
 }
 
-CacheEntryID ComponentCache::createEntryFor(Component &comp,
+template <typename TProb>
+CacheEntryID ComponentCache<TProb>::createEntryFor(Component &comp,
 		unsigned stack_id) {
 	my_time_++;
 	CacheEntryID id;
@@ -64,14 +68,14 @@ CacheEntryID ComponentCache::createEntryFor(Component &comp,
 		if (entry_base_.capacity() == entry_base_.size()) {
 			entry_base_.reserve(2 * entry_base_.size());
 		}
-		entry_base_.push_back(new CachedComponent(comp));
+		entry_base_.push_back(new CachedComponent<TProb>(comp));
 		id = entry_base_.size() - 1;
 	} else {
 		id = free_entry_base_slots_.back();
 		assert(id < entry_base_.size());
 		assert(entry_base_[id] == nullptr);
 		free_entry_base_slots_.pop_back();
-		entry_base_[id] = new CachedComponent(comp);
+		entry_base_[id] = new CachedComponent<TProb>(comp);
 	}
 	entry_base_[id]->setComponentStackID(stack_id);
 	entry_base_[id]->set_creation_time(my_time_);
@@ -93,7 +97,8 @@ CacheEntryID ComponentCache::createEntryFor(Component &comp,
 	return id;
 }
 
-void ComponentCache::test_descendantstree_consistency() {
+template <typename TProb>
+void ComponentCache<TProb>::test_descendantstree_consistency() {
 	for (unsigned id = 2; id < entry_base_.size(); id++)
 		if (entry_base_[id] != nullptr) {
 			CacheEntryID act_child = entry(id).first_descendant();
@@ -120,8 +125,9 @@ void ComponentCache::test_descendantstree_consistency() {
 		}
 }
 
-unsigned long ComponentCache::recompute_bytes_memory_usage() {
-	statistics_.cache_bytes_memory_usage_ = sizeof(ComponentCache)
+template <typename TProb>
+unsigned long ComponentCache<TProb>::recompute_bytes_memory_usage() {
+	statistics_.cache_bytes_memory_usage_ = sizeof(ComponentCache<TProb>)
 			+ sizeof(CacheBucket *) * table_.capacity();
 	for (auto pbucket : table_)
 		if (pbucket != nullptr)
@@ -136,15 +142,16 @@ unsigned long ComponentCache::recompute_bytes_memory_usage() {
 
 // FIXME for ssat
 
-bool ComponentCache::requestProbOf(Component &comp, double& prob, Node*& n) {
+template <typename TProb>
+bool ComponentCache<TProb>::requestProbOf(Component &comp, TProb& prob, Node*& n) {
 	n = NULL;
-	CachedComponent &packedcomp = entry(comp.id());
+	CachedComponent<TProb>& packedcomp = entry(comp.id());
 
 	unsigned int v = clip(packedcomp.hashkey());
 	if (!isBucketAt(v))
 		return false;
 
-	CachedComponent *pcomp;
+	CachedComponent<TProb>* pcomp;
 	statistics_.num_cache_look_ups_++;
 
 	for (auto it = table_[v]->begin(); it != table_[v]->end(); it++) {
@@ -162,14 +169,15 @@ bool ComponentCache::requestProbOf(Component &comp, double& prob, Node*& n) {
 	return false;
 }
 
-bool ComponentCache::requestValueOf(Component &comp, mpz_class &rn) {
-	CachedComponent &packedcomp = entry(comp.id());
+template <typename TProb>
+bool ComponentCache<TProb>::requestValueOf(Component &comp, mpz_class &rn) {
+	CachedComponent<TProb>& packedcomp = entry(comp.id());
 
 	unsigned int v = clip(packedcomp.hashkey());
 	if (!isBucketAt(v))
 		return false;
 
-	CachedComponent *pcomp;
+	CachedComponent<TProb>* pcomp;
 	statistics_.num_cache_look_ups_++;
 
 	for (auto it = table_[v]->begin(); it != table_[v]->end(); it++) {
@@ -186,7 +194,8 @@ bool ComponentCache::requestValueOf(Component &comp, mpz_class &rn) {
 	return false;
 }
 
-bool ComponentCache::deleteEntries() {
+template <typename TProb>
+bool ComponentCache<TProb>::deleteEntries() {
 	assert(
 			statistics_.cache_bytes_memory_usage_ >= config_.maximum_cache_size_bytes);
 
@@ -240,7 +249,8 @@ bool ComponentCache::deleteEntries() {
 	return true;
 }
 
-void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
+template <typename TProb>
+void ComponentAnalyzer<TProb>::initialize(LiteralIndexedVector<Literal> & literals,
 		vector<LiteralID> &lit_pool, vector<QType>& var_type) {
 
 	cache_.init();
@@ -338,15 +348,16 @@ void ComponentAnalyzer::initialize(LiteralIndexedVector<Literal> & literals,
 	}
 
 	// BEGIN CACHE INIT
-	CachedComponent::adjustPackSize(max_variable_id_, max_clause_id_);
+	CachedComponent<TProb>::adjustPackSize(max_variable_id_, max_clause_id_);
 	initializeComponentStack();
 }
 
-bool ComponentAnalyzer::recordRemainingCompsFor(StackLevel &top) {
+template <typename TProb>
+bool ComponentAnalyzer<TProb>::recordRemainingCompsFor(StackLevel<TProb> &top) {
 	Component & super_comp = superComponentOf(top);
 	// FIXME SSAT
 	static mpz_class tmp_model_count;
-	double 	tmp_sat_prob;
+	static TProb tmp_sat_prob;
 	Node* 	node;
 
 	memset(clauses_seen_, CA_NIL,
@@ -471,7 +482,8 @@ bool ComponentAnalyzer::recordRemainingCompsFor(StackLevel &top) {
 	return true;
 }
 
-void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& top) {
+template <typename TProb>
+void ComponentAnalyzer<TProb>::recordComponentOf(const VariableIndex var, StackLevel<TProb>& top) {
 	component_search_stack_.clear();
 	component_search_stack_.push_back(var);
 
@@ -632,7 +644,8 @@ void ComponentAnalyzer::recordComponentOf(const VariableIndex var, StackLevel& t
 	}
 }
 
-void ComponentAnalyzer::initializeComponentStack() {
+template <typename TProb>
+void ComponentAnalyzer<TProb>::initializeComponentStack() {
 	component_stack_.clear();
 	component_stack_.reserve(max_variable_id_ + 2);
 	component_stack_.push_back(new Component());
@@ -646,7 +659,8 @@ void ComponentAnalyzer::initializeComponentStack() {
 	assert(id == 1);
 }
 
-void ComponentAnalyzer::removeAllCachePollutionsOf(StackLevel &top) {
+template <typename TProb>
+void ComponentAnalyzer<TProb>::removeAllCachePollutionsOf(StackLevel<TProb> &top) {
 	if (!config_.perform_component_caching)
 		return;
 	// all processed components are found in
@@ -669,7 +683,8 @@ void ComponentAnalyzer::removeAllCachePollutionsOf(StackLevel &top) {
 #endif
 }
 
-void ComponentAnalyzer::pureEliminate(VariableIndex var, vector<ClauseOfs>& occur){
+template <typename TProb>
+void ComponentAnalyzer<TProb>::pureEliminate(VariableIndex var, vector<ClauseOfs>& occur){
 	// TODO
 	// 1. set var NIL
 	assert(var2Q_[var]==EXISTENTIAL);
@@ -678,7 +693,8 @@ void ComponentAnalyzer::pureEliminate(VariableIndex var, vector<ClauseOfs>& occu
 		clauses_seen_[occur[i]] = CA_NIL;
 }
 
-void ComponentAnalyzer::pureEliminate(VariableIndex var, int* start_ofs){
+template <typename TProb>
+void ComponentAnalyzer<TProb>::pureEliminate(VariableIndex var, int* start_ofs){
 	assert(var2Q_[var]==EXISTENTIAL);
 	variables_seen_[var] = CA_NIL;
 	for (auto pcl_ofs = start_ofs; *pcl_ofs != SENTINEL_CL; pcl_ofs++) {
@@ -772,3 +788,8 @@ void ComponentAnalyzer::pureEliminate(VariableIndex var, int* start_ofs){
 // 	}
 
 // }
+
+template class ComponentCache<double>;
+template class ComponentCache<mpq_class>;
+template class ComponentAnalyzer<double>;
+template class ComponentAnalyzer<mpq_class>;

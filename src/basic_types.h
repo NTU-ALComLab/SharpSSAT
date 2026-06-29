@@ -93,13 +93,14 @@ struct SolverConfiguration {
   bool include_forall = false;
   bool perform_component_caching = true;
   bool perform_clause_learning = true;
-  bool perform_failed_lit_test = false;
+  // bool perform_failed_lit_test = false;
   bool perform_pre_processing = true;
-  bool perform_thresholding = false;
+  // bool perform_thresholding = false;
   bool perform_pure_literal = false;
   bool perform_pure_component = false;
   bool strategy_generation = false;
   bool compile_DNNF = false;
+  string DNNF_filename; // output dec-DNNF filname
   bool certificate_generation = false;
   bool vsads_freq = true;
   bool vsads_act = true;
@@ -114,6 +115,7 @@ struct SolverConfiguration {
   static bool quiet;
 };
 
+template <typename TProb>
 class DataAndStatistics {
 public:
   string input_file_;
@@ -178,13 +180,13 @@ public:
   /*end statistics */
 
   mpz_class final_solution_count_ = 0;
-  double    final_solution_prob_ = 0;
+  TProb final_solution_prob_ = 0;
 
   unsigned long num_clauses() {
     return num_long_clauses_ + num_binary_clauses_ + num_unit_clauses_;
   }
   unsigned long num_conflict_clauses() {
-    return num_long_conflict_clauses_ + num_binary_conflict_clauses_;
+    return num_long_conflict_clauses_ + num_binary_conflict_clauses_ + num_unit_clauses_;
   }
 
 
@@ -205,7 +207,7 @@ public:
     mpz_mul_2exp(final_solution_count_.get_mpz_t (),count.get_mpz_t (), num_variables_ - num_used_variables_);
   }
 
-  void set_final_solution_prob(double p){
+  void set_final_solution_prob(const TProb& p){
     final_solution_prob_ = p;
   }
 
@@ -213,7 +215,7 @@ public:
     return final_solution_count_;
   }
 
-  const double& final_solution_prob() const{
+  const TProb& final_solution_prob() const{
     return final_solution_prob_;
   }
 

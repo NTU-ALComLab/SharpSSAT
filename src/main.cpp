@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     cout << "  -cs [n]  \t set max cache size to n MB" << endl;
     cout << "  -s       \t ssat solving" << endl;
     cout << "  -p       \t turn on pure literal detection" << endl;
-    cout << "  -c       \t turn on pure component detection" << endl;
+    // cout << "  -c       \t turn on pure component detection" << endl;
     cout << "  -k       \t turn on strategy generation"  << endl;
     cout << "  -u       \t enable universal quatifiers"  << endl;
     cout << "  -d [file]\t turn on dec-DNNF writing"  << endl;
@@ -70,17 +70,17 @@ int main(int argc, char *argv[]) {
       config.DNNF_filename = argv[i + 1];
       ++i;
     }
-    if ( strcmp(argv[i], "-c")==0 )
-      config.perform_pure_component = true;
-    if ( strcmp(argv[i], "-p")==0 )
+    // else if ( strcmp(argv[i], "-c")==0 )
+    //   config.perform_pure_component = true;
+    else if ( strcmp(argv[i], "-p")==0 )
       config.perform_pure_literal = true;
-    if ( strcmp(argv[i], "-s")==0 )
+    else if ( strcmp(argv[i], "-s")==0 )
       config.ssat_solving = true;
-    if (strcmp(argv[i], "-mp") == 0)
+    else if (strcmp(argv[i], "-mp") == 0)
       use_mpq = true;
-    if (strcmp(argv[i], "-noCC") == 0)
+    else if (strcmp(argv[i], "-noCC") == 0)
       config.perform_component_caching = false;
-    if (strcmp(argv[i], "-noCL") == 0)
+    else if (strcmp(argv[i], "-noCL") == 0)
       config.perform_clause_learning= false;
     else if (strcmp(argv[i], "-q") == 0)
       SolverConfiguration::quiet = true;
@@ -106,8 +106,17 @@ int main(int argc, char *argv[]) {
       config.maximum_cache_size_bytes = atol(argv[i + 1]) * 1000000;
       ++i;
     }
-    else
+    else if (argv[i][0] == '-') {
+      cout << "Unknown option: " << argv[i] << endl;
+      return -1;
+    }
+    else if (!input_file.empty()) {
+      cout << "Multiple input files specified" << endl;
+      return -1;
+    }
+    else {
       input_file = argv[i];
+    }
   }
 
   if (config.include_forall && (config.certificate_generation || config.compile_DNNF)) {

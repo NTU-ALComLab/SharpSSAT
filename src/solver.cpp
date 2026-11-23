@@ -260,6 +260,14 @@ bool Solver<TProb>::solve(const string& file_name) {
 
       this->statistics_.exit_state_ =
           config_.ssat_solving ? countSSAT() : countSAT();
+      if (this->statistics_.exit_state_ != SUCCESS) {
+        stopwatch_.stop();
+        this->statistics_.time_elapsed_ = stopwatch_.getElapsedSeconds();
+        if (this->statistics_.exit_state_ == TIMEOUT)
+          cout << "TIMEOUT" << endl;
+
+        return false;
+      }
 
       if (config_.ssat_solving) {
         this->statistics_.set_final_solution_prob(

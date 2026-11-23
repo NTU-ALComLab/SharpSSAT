@@ -72,16 +72,14 @@ public:
   void generateUnivStrategy(const string & file_name);
   void generateDNNF(const string & file_name);
   void generateCertificate(const string & up, const string & low, const string & prob);
-  #ifdef DEBUG_TRACE
-    void printTrace() { trace_->printTrace(); }
-  #endif
 
   SolverConfiguration &config() {
     return config_;
   }
 
-  void setTimeBound(long int i) {
-    stopwatch_.setTimeBound(i);
+  void setTimeBound(long int seconds) {
+    config_.time_bound_seconds = seconds;
+    stopwatch_.setTimeBound(seconds);
   }
 
 private:
@@ -172,7 +170,8 @@ private:
 
   bool setLiteralIfFree(LiteralID lit,
       Antecedent ant = Antecedent(NOT_A_CLAUSE)) {
-    assert(this->var(lit).component_level == stack_.get_decision_level());
+    assert(!config_.ssat_solving ||
+           this->var(lit).component_level == stack_.get_decision_level());
     if (this->literal_values_[lit] != X_TRI)
       return false;
     this->var(lit).decision_level = stack_.get_decision_level();

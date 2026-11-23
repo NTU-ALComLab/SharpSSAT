@@ -94,6 +94,7 @@ int main(int argc, char *argv[]) {
         return -1;
       }
       config.time_bound_seconds = atol(argv[i + 1]);
+      ++i;
       if (config.verbose)
         cout << "time bound set to" << config.time_bound_seconds << "s\n";
     }
@@ -103,6 +104,7 @@ int main(int argc, char *argv[]) {
         return -1;
       }
       config.maximum_cache_size_bytes = atol(argv[i + 1]) * 1000000;
+      ++i;
     }
     else
       input_file = argv[i];
@@ -128,9 +130,6 @@ int run_solver(SolverConfiguration& config, const string& input_file) {
   theSolver.config() = config;
   if (!theSolver.solve(input_file)) return -1;
   if(theSolver.config().strategy_generation){
-    #ifdef DEBUG_TRACE
-      theSolver.printTrace();
-    #endif
     if(theSolver.config().include_forall){
       string output_file_exist = regex_replace(input_file, regex("[.]sdimacs"), "_exist.blif");
       cout << "existential strategy written to " << output_file_exist << endl;

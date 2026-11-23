@@ -214,6 +214,7 @@ void Solver<TProb>::HardWireAndCompact() {
 
 template <typename TProb>
 bool Solver<TProb>::solve(const string& file_name) {
+  stopwatch_.setTimeBound(config_.time_bound_seconds);
   stopwatch_.start();
   this->statistics_.input_file_ = file_name;
 
@@ -449,7 +450,7 @@ bool Solver<TProb>::ssatDecideLiteral() {
   for (auto it = component_analyzer_.superComponentOf(stack_.top()).varsBegin();
        *it != varsSENTINEL; it++) {
     this->variables_[*it].component_level++;
-    assert(this->variables_[*it].component_level ==
+    assert(!config_.ssat_solving || this->variables_[*it].component_level ==
            stack_.get_decision_level());
     if (!this->isActive(LiteralID(*it, false)))
       continue;
@@ -674,7 +675,8 @@ bool Solver<TProb>::bcp() {
   for (auto lit : this->unit_clauses_) {
     // NOTE we may possibly assign a unit literal as decLit
     //      that falsifies the formula
-    if (this->var(lit).component_level != stack_.get_decision_level())
+    if (config_.ssat_solving &&
+        this->var(lit).component_level != stack_.get_decision_level())
       continue;
     if (setLiteralIfFree(lit)) {
       // cout << "assign unit clause" << endl;
@@ -751,7 +753,8 @@ bool Solver<TProb>::BCP(unsigned start_at_stack_ofs) {
     // BEGIN Propagate Bin Clauses
     for (auto bt = this->literal(unLit).binary_links_.begin();
          *bt != SENTINEL_LIT; bt++) {
-      if (this->var(*bt).component_level != stack_.get_decision_level())
+      if (config_.ssat_solving &&
+          this->var(*bt).component_level != stack_.get_decision_level())
         continue;
       if (this->isResolved(*bt)) {
         setConflictState(unLit, *bt);
@@ -784,7 +787,8 @@ bool Solver<TProb>::BCP(unsigned start_at_stack_ofs) {
       auto p_watchLit = this->beginOf(*itcl) + 1 - isLitA;
       auto p_otherLit = this->beginOf(*itcl) + isLitA;
 
-      if (this->var(*p_otherLit).component_level != stack_.get_decision_level())
+      if (config_.ssat_solving &&
+          this->var(*p_otherLit).component_level != stack_.get_decision_level())
         continue;
       if (this->isSatisfied(*p_otherLit))
         continue;

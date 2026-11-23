@@ -11,8 +11,10 @@
 #include "basic_types.h"
 #include <cassert>
 
-#define MAX(A,B) (A > B) ? A : B
-#define MIN(A,B) (A < B) ? A : B
+#define MAX(A,B) ((A > B) ? A : B)
+#define MIN(A,B) ((A < B) ? A : B)
+
+template <typename TProb>
 class StackLevel {
   /// active Component, once initialized, it should not change
   const unsigned super_component_ = 0;
@@ -24,12 +26,12 @@ class StackLevel {
 
   //  Solutioncount
   mpz_class branch_model_count_[2] = {0,0};
-  double branch_sat_prob_[2] = {DBL_ZERO, DBL_ZERO};
+  TProb branch_sat_prob_[2] = {0, 0};
   bool branch_found_unsat_[2] = {false,false};
 
   //NOTE ssat
-  double  path_prob_[2] = {1.0, 1.0}; // set lits prob
-  double  dec_prob_ = 0; // active_branch = 0
+  TProb   path_prob_[2] = {1, 1}; // set lits prob
+  TProb   dec_prob_ = 0; // active_branch = 0
   bool    isR_ = true;
   bool    isU_ = false;
   bool    isInv_ = false;
@@ -99,7 +101,9 @@ public:
       if( active_branch_==0 && (branch_sat_prob_[0]*path_prob_[0])==double(0) ) return false;
       return true;
     }
-    if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(1) ) return false;    // on first exist branch, prob=1
+    if( active_branch_==0 &&  (branch_sat_prob_[0]*path_prob_[0])==double(1) ) {
+      return false;    // on first exist branch, prob=1
+    }
     if( active_branch_==1 && ((branch_sat_prob_[0]*path_prob_[0]) >=
                               (branch_sat_prob_[1]*path_prob_[1])) ){                           // on second exist branch, existential early return
       return false;
@@ -146,13 +150,13 @@ public:
 
   }
 
-  void includeSatProb(double prob) {
+  void includeSatProb(const TProb& prob) {
     //cout << super_component_ << " include prob=" << prob << endl;
     if (branch_found_unsat_[active_branch_]) {
       //assert(branch_model_count_[active_branch_] == 0);
       return;
     }
-    if ( prob == DBL_ZERO){
+    if (prob == 0){
       branch_found_unsat_[active_branch_] = true;
       branch_sat_prob_[active_branch_] = DBL_ZERO;
     }
@@ -162,7 +166,7 @@ public:
       branch_sat_prob_[active_branch_] *= prob;
   }
 
-  void includePathProb(double prob){
+  void includePathProb(const TProb& prob){
     //cout << super_component_ << " include implied " << prob << " to "<< super_component_ << endl;
     path_prob_[active_branch_] *= prob;
   }
@@ -187,15 +191,15 @@ public:
     isU_ = r;
   }
 
-  void setDecProb(double p){
+  void setDecProb(const TProb& p){
     dec_prob_ = p;
   }
 
-  double getCurPathProb(){
+  const TProb& getCurPathProb() const {
     return path_prob_[active_branch_];
   }
 
-  double getTotalSatProb() const{
+  TProb getTotalSatProb() const {
     // cout << super_component_ << " branch prob=" << 
     //         path_prob_[0]*branch_sat_prob_[0] << ", " << path_prob_[1]*branch_sat_prob_[1] << endl;
     if(isU_) return MIN( path_prob_[0]*branch_sat_prob_[0], path_prob_[1]*branch_sat_prob_[1]);
@@ -240,7 +244,8 @@ public:
 
 };
 
-class DecisionStack: public vector<StackLevel> {
+template <typename TProb>
+class DecisionStack: public vector<StackLevel<TProb>> {
   unsigned int failed_literal_test_active = 0;
 public:
 
@@ -253,13 +258,13 @@ public:
   }
   //end for implicit BCP
 
-  StackLevel &top() {
-    assert(size() > 0);
-    return back();
+  StackLevel<TProb> &top() {
+    assert(this->size() > 0);
+    return this->back();
   }
   int get_decision_level() const {
-    assert(size() > 0);
-    return size() - 1 + failed_literal_test_active;
+    assert(this->size() > 0);
+    return this->size() - 1 + failed_literal_test_active;
   } // 0 means pre-1st-decision
 
 };

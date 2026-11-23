@@ -15,13 +15,63 @@ using namespace std;
 
 
 // file parsing utility
-float parseFloat(ifstream& in){
+template <typename TProb>
+TProb parseFloat(istream& in);
+
+template <>
+double parseFloat<double>(istream& in) {
   string buf;
   in >> buf;
-  return stof(buf);
+  size_t div_pos = buf.find('/');
+  // If there is a slash, parse it as a fraction
+  if (div_pos != string::npos) {
+    double num = stod(buf.substr(0, div_pos));
+    double den = stod(buf.substr(div_pos + 1));
+    return num / den;
+  }
+
+  // Otherwise, parse with std::stod
+  return stod(buf);
 }
 
-void Instance::cleanClause(ClauseOfs cl_ofs) {
+template <>
+mpq_class parseFloat<mpq_class>(istream& in) {
+  string buf;
+  in >> buf;
+  size_t div_pos = buf.find('/');
+  // If there is a slash, parse it as a fraction
+  if (div_pos != string::npos) {
+    mpq_class result(buf);
+    result.canonicalize();
+    return result;
+  }
+
+  size_t dot_pos = buf.find('.');
+  // If there is no decimal point, parse it directly as an integer
+  if (dot_pos == string::npos) {
+    return mpq_class(buf);
+  }
+
+  // Extract the parts before and after the decimal point
+  string int_part = buf.substr(0, dot_pos);
+  string frac_part = buf.substr(dot_pos + 1);
+
+  // Combine them to form the numerator string
+  string num_str = int_part + frac_part;
+  mpz_class num(num_str, 10);
+
+  // The denominator is 10^(length of fractional part)
+  mpz_class den = 1;
+  mpz_ui_pow_ui(den.get_mpz_t(), 10, frac_part.length());
+
+  // Create the rational number and reduce it to lowest terms
+  mpq_class result(num, den);
+  result.canonicalize();
+  return result;
+}
+
+template <typename TProb>
+void Instance<TProb>::cleanClause(ClauseOfs cl_ofs) {
   bool satisfied = false;
   for (auto it = beginOf(cl_ofs); *it != SENTINEL_LIT; it++)
     if (isSatisfied(*it)) {
@@ -54,7 +104,8 @@ void Instance::cleanClause(ClauseOfs cl_ofs) {
   }
 }
 
-void Instance::compactClauses() {
+template <typename TProb>
+void Instance<TProb>::compactClauses() {
   vector<ClauseOfs> clause_ofs;
   clause_ofs.reserve(statistics_.num_long_clauses_);
 
@@ -115,7 +166,8 @@ void Instance::compactClauses() {
   statistics_.num_binary_clauses_ = bin_links >> 1;
 }
 
-void Instance::compactVariables() {
+template <typename TProb>
+void Instance<TProb>::compactVariables() {
   vector<unsigned> var_map(variables_.size(), 0);
   unsigned last_ofs = 0;
   unsigned num_isolated = 0;
@@ -195,7 +247,8 @@ void Instance::compactVariables() {
   statistics_.num_free_variables_ = num_isolated;
 }
 
-void Instance::compactConflictLiteralPool(){
+template <typename TProb>
+void Instance<TProb>::compactConflictLiteralPool(){
   auto write_pos = conflict_clauses_begin();
   vector<ClauseOfs> tmp_conflict_clauses = conflict_clauses_;
   conflict_clauses_.clear();
@@ -221,8 +274,8 @@ void Instance::compactConflictLiteralPool(){
   literal_pool_.erase(write_pos,literal_pool_.end());
 }
 
-
-bool Instance::deleteConflictClauses() {
+template <typename TProb>
+bool Instance<TProb>::deleteConflictClauses() {
   statistics_.times_conflict_clauses_cleaned_++;
   if (conflict_clauses_.empty()) return true;
   vector<ClauseOfs> tmp_conflict_clauses = conflict_clauses_;
@@ -250,8 +303,8 @@ bool Instance::deleteConflictClauses() {
   return true;
 }
 
-
-bool Instance::markClauseDeleted(ClauseOfs cl_ofs){
+template <typename TProb>
+bool Instance<TProb>::markClauseDeleted(ClauseOfs cl_ofs){
   // only first literal may possibly have cl_ofs as antecedent
   if(isAntecedentOf(cl_ofs, *beginOf(cl_ofs)))
     return false;
@@ -261,11 +314,11 @@ bool Instance::markClauseDeleted(ClauseOfs cl_ofs){
   return true;
 }
 
-
-bool Instance::createfromFile(const string &file_name) {
+template <typename TProb>
+bool Instance<TProb>::createfromFile(const string &file_name) {
   unsigned int nVars, nCls;
   int lit, var;
-  float prob;
+  TProb prob;
   unsigned max_ignore = 1000000;
   unsigned clauses_added = 0;
   unsigned qlev = 0;
@@ -361,7 +414,7 @@ bool Instance::createfromFile(const string &file_name) {
       QType qt;
       if(c=='r'){
         qt = RANDOM;
-        prob = parseFloat(input_file);
+        prob = parseFloat<TProb>(input_file);
         while ( (input_file >> var) && var!=0 ){
           vars.push_back(var);
           var2Prob_[var] = prob;
@@ -407,7 +460,7 @@ bool Instance::createfromFile(const string &file_name) {
     else if( c=='w' ){
       vars.clear();
       input_file >> var;
-      prob = parseFloat(input_file);
+      prob = parseFloat<TProb>(input_file);
       var2Prob_[var] = (var>0) ? prob : 1-prob;
       input_file >> var; assert(var==0); // dummy
     }
@@ -435,3 +488,5 @@ bool Instance::createfromFile(const string &file_name) {
   return true;
 }
 
+template class Instance<double>;
+template class Instance<mpq_class>;

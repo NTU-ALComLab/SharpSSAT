@@ -8,7 +8,8 @@
 #ifndef COMPONENT_MANAGEMENT_INL_H_
 #define COMPONENT_MANAGEMENT_INL_H_
 
-void ComponentCache::cleanPollutionsInvolving(CacheEntryID id) {
+template <typename TProb>
+void ComponentCache<TProb>::cleanPollutionsInvolving(CacheEntryID id) {
   CacheEntryID father = entry(id).father();
   if (entry(father).first_descendant() == id) {
     entry(father).set_first_descendant(entry(id).next_sibling());
@@ -34,7 +35,8 @@ void ComponentCache::cleanPollutionsInvolving(CacheEntryID id) {
   eraseEntry(id);
 }
 
-void ComponentCache::removeFromHashTable(CacheEntryID id) {
+template <typename TProb>
+void ComponentCache<TProb>::removeFromHashTable(CacheEntryID id) {
   unsigned int v = clip(entry(id).hashkey());
   if (isBucketAt(v))
     for (auto it = table_[v]->begin(); it != table_[v]->end(); it++) {
@@ -46,7 +48,8 @@ void ComponentCache::removeFromHashTable(CacheEntryID id) {
     }
 }
 
-void ComponentCache::removeFromDescendantsTree(CacheEntryID id) {
+template <typename TProb>
+void ComponentCache<TProb>::removeFromDescendantsTree(CacheEntryID id) {
   assert(hasEntry(id));
   // we need a father for this all to work
   assert(entry(id).father());
@@ -80,7 +83,8 @@ void ComponentCache::removeFromDescendantsTree(CacheEntryID id) {
   }
 }
 
-void ComponentCache::storeValueOf(CacheEntryID id, const mpz_class &model_count) {
+template <typename TProb>
+void ComponentCache<TProb>::storeValueOf(CacheEntryID id, const mpz_class &model_count) {
   CacheBucket &bucket = at(clip(entry(id).hashkey()));
   // when storing the new model count the size of the model count
   // and hence that of the component will change
@@ -94,7 +98,8 @@ void ComponentCache::storeValueOf(CacheEntryID id, const mpz_class &model_count)
 }
 
 // FIXME for ssat
-void ComponentCache::storeProbOf(CacheEntryID id, double prob, Node* n) {
+template <typename TProb>
+void ComponentCache<TProb>::storeProbOf(CacheEntryID id, const TProb& prob, Node* n) {
   CacheBucket &bucket = at(clip(entry(id).hashkey()));
   // when storing the new model count the size of the model count
   // and hence that of the component will change

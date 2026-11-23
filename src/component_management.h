@@ -17,6 +17,7 @@
 
 using namespace std;
 
+template <typename TProb>
 class ComponentCache {
 public:
 
@@ -40,7 +41,7 @@ public:
     return recompute_bytes_memory_usage() / 1000000;
   }
 
-  ComponentCache(SolverConfiguration &conf, DataAndStatistics &statistics);
+  ComponentCache(SolverConfiguration &conf, DataAndStatistics<TProb> &statistics);
 
   ~ComponentCache() {
     for (auto &pbucket : table_)
@@ -51,7 +52,7 @@ public:
         delete pentry;
   }
 
-  CachedComponent &entry(CacheEntryID id) {
+  CachedComponent<TProb> &entry(CacheEntryID id) {
     assert(entry_base_.size() > id);
     assert(entry_base_[id] != nullptr);
     return *entry_base_[id];
@@ -90,12 +91,12 @@ public:
 
   // store the number in model_count as the model count of CacheEntryID id
   inline void storeValueOf(CacheEntryID id, const mpz_class &model_count);
-  inline void storeProbOf(CacheEntryID id, double prob, Node* n);
+  inline void storeProbOf(CacheEntryID id, const TProb& prob, Node* n);
 
   // check if the cache contains the modelcount of comp
   // if so, return true and out_model_count contains that model count
   bool requestValueOf(Component &comp, mpz_class &out_model_count);
-  bool requestProbOf(Component &comp, double &out_prob, Node*& n);
+  bool requestProbOf(Component &comp, TProb &out_prob, Node*& n);
 
   bool deleteEntries();
 
@@ -122,7 +123,7 @@ private:
     return table_[ofs] != NULL;
   }
 
-  vector<CachedComponent *> entry_base_;
+  vector<CachedComponent<TProb>*> entry_base_;
   vector<CacheEntryID> free_entry_base_slots_;
 
   // the actual hash table
@@ -130,7 +131,7 @@ private:
   vector<CacheBucket *> table_;
 
   SolverConfiguration &config_;
-  DataAndStatistics &statistics_;
+  DataAndStatistics<TProb> &statistics_;
 
   // unsigned long num_buckets_ = 0;
   unsigned long num_occupied_buckets_ = 0;
@@ -152,6 +153,7 @@ struct CAClauseHeader {
   }
 };
 
+template <typename TProb>
 class ComponentAnalyzer {
 public:
 
@@ -164,12 +166,13 @@ public:
       cache_.storeValueOf(component_stack_[stack_comp_id]->id(), value);
   }
 
-  void cacheSatProbOf(unsigned stack_comp_id, double prob, Node* n) {
-    if (config_.perform_component_caching)
+  void cacheSatProbOf(unsigned stack_comp_id, const TProb& prob, Node* n) {
+    if (config_.perform_component_caching) {
       cache_.storeProbOf(component_stack_[stack_comp_id]->id(), prob, n);
+    }
   }
 
-  Component & superComponentOf(StackLevel &lev) {
+  Component & superComponentOf(StackLevel<TProb>& lev) {
     assert(component_stack_.size() > lev.super_component());
     return *component_stack_[lev.super_component()];
   }
@@ -178,7 +181,7 @@ public:
     return component_stack_.size();
   }
 
-  void cleanRemainingComponentsOf(StackLevel &top) {
+  void cleanRemainingComponentsOf(StackLevel<TProb>& top) {
     while (component_stack_.size() > top.remaining_components_ofs()) {
       if (cache_.hasEntry(component_stack_.back()->id()))
         cache_.entry(component_stack_.back()->id()).eraseComponentStackID();
@@ -188,7 +191,7 @@ public:
     assert(top.remaining_components_ofs() <= component_stack_.size());
   }
 
-  Component & currentRemainingComponentOf(StackLevel &top) {
+  Component& currentRemainingComponentOf(StackLevel<TProb>& top) {
     assert(component_stack_.size() > top.currentRemainingComponent());
     return *component_stack_[top.currentRemainingComponent()];
   }
@@ -197,7 +200,7 @@ public:
   // returns true if a non-trivial non-cached component
   // has been found and is now stack_.TOS_NextComp()
   // returns false if all components have been processed;
-  bool findNextRemainingComponentOf(StackLevel &top) {
+  bool findNextRemainingComponentOf(StackLevel<TProb>& top) {
     // record Remaining Components if there are none!
 
     if (component_stack_.size() <= top.remaining_components_ofs())
@@ -224,9 +227,9 @@ public:
     return false;
   }
 
-  bool recordRemainingCompsFor(StackLevel &top);
+  bool recordRemainingCompsFor(StackLevel<TProb> &top);
 
-  ComponentAnalyzer(SolverConfiguration &config, DataAndStatistics &statistics,
+  ComponentAnalyzer(SolverConfiguration &config, DataAndStatistics<TProb> &statistics,
       LiteralIndexedVector<TriValue> & lit_values) :
       config_(config), statistics_(statistics), cache_(config, statistics), literal_values_(
           lit_values) {
@@ -245,19 +248,19 @@ public:
   void initialize(LiteralIndexedVector<Literal> & literals,
       vector<LiteralID> &lit_pool, vector<QType>& var_type );
 
-  ComponentCache &cache() {
+  ComponentCache<TProb> &cache() {
     return cache_;
   }
 
-  void removeAllCachePollutionsOf(StackLevel &top);
+  void removeAllCachePollutionsOf(StackLevel<TProb>& top);
 
 private:
 
   SolverConfiguration &config_;
-  DataAndStatistics &statistics_;
+  DataAndStatistics<TProb> &statistics_;
 
   vector<Component *> component_stack_;
-  ComponentCache cache_;
+  ComponentCache<TProb> cache_;
 
   // the id of the last clause
   // not that clause ID is the clause number,
@@ -340,7 +343,7 @@ private:
   // component_search_stack
   // we have an isolated variable iff
   // after execution component_search_stack.size()==1
-  void recordComponentOf(const VariableIndex var, StackLevel& top);
+  void recordComponentOf(const VariableIndex var, StackLevel<TProb>& top);
 
   void initializeComponentStack();
 

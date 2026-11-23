@@ -37,11 +37,13 @@ timeval StopWatch::getElapsedTime() {
   return r;
 }
 
-void DataAndStatistics::print_final_solution_count() {
+template <typename TProb>
+void DataAndStatistics<TProb>::print_final_solution_count() {
   cout << final_solution_count_.get_str();
 }
 
-void DataAndStatistics::writeToFile(const string & file_name) {
+template <typename TProb>
+void DataAndStatistics<TProb>::writeToFile(const string & file_name) {
   ofstream out(file_name, ios_base::app);
   unsigned pos = input_file_.find_last_of("/\\");
   out << "<tr>" << endl;
@@ -58,7 +60,8 @@ void DataAndStatistics::writeToFile(const string & file_name) {
   out << "</tr>" << endl;
 }
 
-void DataAndStatistics::printShort() {
+template <typename TProb>
+void DataAndStatistics<TProb>::printShort() {
   if (exit_state_ == TIMEOUT) {
     cout << endl << " TIMEOUT !" << endl;
     return;
@@ -68,7 +71,7 @@ void DataAndStatistics::printShort() {
       << num_used_variables_ << "/" << num_variables_ - num_used_variables_
       << endl;
   cout << "clauses (removed) \t\t\t" << num_original_clauses_ << " ("
-      << num_original_clauses_ - num_clauses() << ")" << endl;
+      << num_original_clauses_ + num_unit_clauses_ - num_clauses() << ")" << endl;
   cout << "decisions \t\t\t\t" << num_decisions_ << endl;
   cout << "conflicts \t\t\t\t" << num_conflicts_ << endl;
   cout << "conflict clauses (all/bin/unit) \t";
@@ -92,3 +95,6 @@ void DataAndStatistics::printShort() {
   cout << "\n# END" << endl << endl;
   cout << "time: " << time_elapsed_ << "s\n\n";
 }
+
+template class DataAndStatistics<double>;
+template class DataAndStatistics<mpq_class>;

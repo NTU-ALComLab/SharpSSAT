@@ -179,6 +179,7 @@ public:
 struct Variable {
   Antecedent ante;
   int decision_level = INVALID_DL;
+  int component_level = 0;
 };
 
 // for now Clause Header is just a dummy
